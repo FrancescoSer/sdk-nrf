@@ -148,6 +148,9 @@ manifest:
       revision: 5f376e7fdc717439b95a549b80bacfdb12820097
       groups:
       - find-my
+    - name: sdk-lc3
+      revision: 1eeeeead46ff8d045ca99b8dabf0b3850744f84e
+      path: modules/lc3
     # Other third-party repositories.
     - name: cmock
       path: test/cmock
