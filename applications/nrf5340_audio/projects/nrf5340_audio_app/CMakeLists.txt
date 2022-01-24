@@ -117,7 +117,11 @@ endif()
 
 # LC3
 if (CONFIG_SW_CODEC_LC3)
-    include(${LC3_ROOT}/CMakeLists.txt)
+    if (EXISTS ${LC3_ROOT}/CMakeLists.txt)
+        include(${LC3_ROOT}/CMakeLists.txt)
+    else()
+        message(FATAL_ERROR "LC3 repository not found - Do 'west config manifest.group-filter +nrf5340_audio' and then 'west update'. If access is denied, contact local Nordic Semiconductor support or use SBC codec")
+    endif()
 endif()
 
 # Cirrus HW codec resources

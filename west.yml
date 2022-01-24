@@ -39,7 +39,7 @@ manifest:
   defaults:
     remote: ncs
 
-  group-filter: [-homekit, -nrf-802154, -find-my]
+  group-filter: [-homekit, -nrf-802154, -find-my, -nrf5340_audio]
 
   # "projects" is a list of git repositories which make up the NCS
   # source code.
@@ -150,7 +150,9 @@ manifest:
       - find-my
     - name: sdk-lc3
       revision: 1eeeeead46ff8d045ca99b8dabf0b3850744f84e
-      path: modules/lc3
+      path: modules/lib/lc3
+      groups:
+      - nrf5340_audio
     # Other third-party repositories.
     - name: cmock
       path: test/cmock

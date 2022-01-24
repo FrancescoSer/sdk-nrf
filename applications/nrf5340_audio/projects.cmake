@@ -60,7 +60,7 @@ set(NRF5340_AUDIO_VERIFICATION ${NRF5340_AUDIO_REPO_ROOT}/verification)
 set(NRF5340_AUDIO_DEBUG_TOOLS_SRC ${NRF5340_AUDIO_REPO_ROOT}/tools/debug/src)
 set(NRF5340_AUDIO_DEBUG_TOOLS_INC ${NRF5340_AUDIO_REPO_ROOT}/tools/debug/inc)
 set(NRF5340_AUDIO_MODULES ${NRF5340_AUDIO_REPO_ROOT}/../modules)
-set(LC3_ROOT ${NRF5340_AUDIO_REPO_ROOT}/../../../modules/lc3)
+set(LC3_ROOT ${NRF5340_AUDIO_REPO_ROOT}/../../../modules/lib/lc3)
 set(CIRRUS_ROOT ${EXT_ROOT}/cirrus_logic)
 
 # Set up variables used by the Zephyr build system
