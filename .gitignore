@@ -33,5 +33,3 @@ doc/*_doc.log
 
 ext/lib/bin/supl
 ext/lib/bin/libsupl.zip
-
-applications/nrf5340_audio/src/fw_info_app.c

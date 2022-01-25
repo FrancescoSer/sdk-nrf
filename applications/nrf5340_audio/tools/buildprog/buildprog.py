@@ -57,11 +57,11 @@ from program import program_threads_run
 TARGET_BOARD_NRF5340_AUDIO_DK_APP_NAME = 'nrf5340_audio_dk_nrf5340_cpuapp'
 TARGET_BOARD_NRF5340_AUDIO_DK_NET_NAME = 'nrf5340_audio_dk_nrf5340_cpunet'
 
-TARGET_CORE_APP_FOLDER = 'nrf5340_audio_app'
-TARGET_CORE_NET_FOLDER = 'nrf5340_audio_net'
-TARGET_DEV_HEADSET_FOLDER = "dev_headset"
-TARGET_DEV_GATEWAY_FOLDER = "dev_gateway"
-TARGET_DEV_BLE_FOLDER = "dev_ble"
+TARGET_CORE_APP_FOLDER = '../../nrf5340_audio_app'
+TARGET_CORE_NET_FOLDER = '../../nrf5340_audio_net'
+TARGET_DEV_HEADSET_FOLDER = 'build/dev_headset'
+TARGET_DEV_GATEWAY_FOLDER = 'build/dev_gateway'
+TARGET_DEV_BLE_FOLDER = 'dev_ble'
 TARGET_RELEASE_FOLDER = 'build_release'
 TARGET_DEBUG_FOLDER = 'build_debug'
 

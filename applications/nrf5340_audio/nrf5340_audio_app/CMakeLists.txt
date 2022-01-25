@@ -1,8 +1,14 @@
+#
+# Copyright (c) 2022 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
 cmake_minimum_required(VERSION 3.10.0)
 
-include(../../projects.cmake)
+include(../projects.cmake)
 
-## Create flag which defines whether to compile for the gateway/dongle or headset
+# Create flag which defines whether to compile for the gateway/dongle or headset
 add_compile_definitions(NRF5340_AUDIO_DEV_HEADSET=1)
 add_compile_definitions(NRF5340_AUDIO_DEV_GATEWAY=2)
 
@@ -45,17 +51,17 @@ execute_process(COMMAND
 
 string(TIMESTAMP NRF5340_AUDIO_CORE_APP_COMP_DATE "%a %b %d %H:%M:%S %Y")
 
-# generate fw_git_version.c
-configure_file("${NRF5340_AUDIO_SRC}/fw_info_app.c.in" "${NRF5340_AUDIO_SRC}/fw_info_app.c" @ONLY)
+# Generate fw_info_app.c
+configure_file("${NRF5340_AUDIO_SRC}/fw_info_app.c.in" "${CMAKE_BINARY_DIR}/fw_info_app.c" @ONLY)
 
 # Target sources below are specific to the nRF5340 Audio DK HW
 
 message("== Compiling for BOARD = ${BOARD} ==")
 
 target_sources(app PRIVATE
-    main.c
+    ${NRF5340_AUDIO_SRC}/main.c
     ${NRF5340_AUDIO_SRC}/error_handler.c
-    ${NRF5340_AUDIO_SRC}/fw_info_app.c
+    ${CMAKE_BINARY_DIR}/fw_info_app.c
     ${NRF5340_AUDIO_SRC}/led.c
     ${NRF5340_AUDIO_SRC}/debug.c
     ${NRF5340_AUDIO_SRC}/pcm_stream_channel_modifier.c
@@ -91,21 +97,12 @@ target_sources(app PRIVATE
     ${NRF5340_AUDIO_SRC}/contin_array.c
     )
 
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_INC})
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_INC}/subsys/bluetooth)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_INC}/drivers)
+zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC})
+zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC}/subsys/bluetooth)
+zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC}/drivers)
 zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_REPO_ROOT}/../../boards/arm/nrf5340_audio_dk_nrf5340)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_DEBUG_TOOLS_INC})
 
-target_include_directories(app PRIVATE ../../test_code/inc/)
-
-
-# Add modules
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_MODULES}/hal/nordic)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_MODULES}/hal/libmetal)
-
-
-## Codecs
+# Codecs
 if (CONFIG_SW_CODEC_LC3 AND CONFIG_SW_CODEC_SBC)
     message(FATAL_ERROR "Only one codec can be selected in the current implementation, not able to compile for SBC and LC3 at same time")
 endif()
