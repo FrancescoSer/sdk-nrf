@@ -63,7 +63,6 @@ target_sources(app PRIVATE
     ${NRF5340_AUDIO_SRC}/error_handler.c
     ${CMAKE_BINARY_DIR}/fw_info_app.c
     ${NRF5340_AUDIO_SRC}/led.c
-    ${NRF5340_AUDIO_SRC}/debug.c
     ${NRF5340_AUDIO_SRC}/pcm_stream_channel_modifier.c
     ${NRF5340_AUDIO_SRC}/sw_codec_select.c
     ${NRF5340_AUDIO_SRC}/audio_codec.c
