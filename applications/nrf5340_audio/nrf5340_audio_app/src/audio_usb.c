@@ -19,8 +19,8 @@ LOG_MODULE_REGISTER(audio_usb, CONFIG_LOG_AUDIO_USB_LEVEL);
 #define USB_FRAME_SIZE_STEREO \
 	(((CONFIG_AUDIO_SAMPLE_RATE_HZ * CONFIG_AUDIO_CONTAINER_BITS) / (8 * 1000)) * 2)
 
-static data_fifo_t *fifo_tx;
-static data_fifo_t *fifo_rx;
+static struct data_fifo *fifo_tx;
+static struct data_fifo *fifo_rx;
 
 NET_BUF_POOL_FIXED_DEFINE(pool_out, CONFIG_FIFO_FRAME_SPLIT_NUM, USB_FRAME_SIZE_STEREO, 8,
 			  net_buf_destroy);
@@ -133,7 +133,7 @@ static const struct usb_audio_ops ops = {
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 };
 
-int audio_usb_start(data_fifo_t *fifo_tx_in, data_fifo_t *fifo_rx_in)
+int audio_usb_start(struct data_fifo *fifo_tx_in, struct data_fifo *fifo_rx_in)
 {
 	if (fifo_tx_in == NULL || fifo_rx_in == NULL) {
 		return -EINVAL;

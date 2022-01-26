@@ -37,7 +37,7 @@ DATA_FIFO_DEFINE(fifo_rx, FIFO_RX_BLOCK_COUNT, WB_UP(BLOCK_SIZE_BYTES));
 static struct k_thread encoder_thread_data;
 static k_tid_t encoder_thread_id;
 
-static sw_codec_config_t sw_codec_config;
+static struct sw_codec_config sw_codec_cfg;
 /* Buffer which can hold max 1 period test tone at 1000 Hz */
 int16_t test_tone_buf[CONFIG_AUDIO_SAMPLE_RATE_HZ / 1000];
 size_t test_tone_size;
@@ -77,7 +77,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 			ERR_CHK(ret);
 		}
 
-		if (sw_codec_config.encoder.enabled) {
+		if (sw_codec_cfg.encoder.enabled) {
 			if (test_tone_size) {
 				/* Test tone takes over audio stream */
 				uint32_t num_bytes;
@@ -111,7 +111,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 			debug_trans_count++;
 		}
 
-		if (sw_codec_config.encoder.enabled) {
+		if (sw_codec_cfg.encoder.enabled) {
 			/* Send encoded data over IPM */
 			streamctrl_encoded_data_send(encoded_data, encoded_data_size);
 		}
@@ -140,12 +140,12 @@ static void audio_codec_start(void)
 		ERR_CHK_MSG(ret, "Failed to set up rx FIFO");
 	}
 
-	ret = sw_codec_init(sw_codec_config);
+	ret = sw_codec_init(sw_codec_cfg);
 	ERR_CHK_MSG(ret, "Failed to set up codec");
 
-	sw_codec_config.initialized = true;
+	sw_codec_cfg.initialized = true;
 
-	if (sw_codec_config.encoder.enabled) {
+	if (sw_codec_cfg.encoder.enabled) {
 		encoder_thread_id = k_thread_create(
 			&encoder_thread_data, encoder_thread_stack, CONFIG_ENCODER_STACK_SIZE,
 			(k_thread_entry_t)encoder_thread, NULL, NULL, NULL,
@@ -186,7 +186,7 @@ int audio_decode(void const *const encoded_data, size_t encoded_data_size, bool 
 	static void *pcm_raw_data;
 	size_t pcm_block_size;
 
-	if (!sw_codec_config.initialized) {
+	if (!sw_codec_cfg.initialized) {
 		/* Throw away data */
 		/* This can happen when using play/pause since there might be
 		 * some packages left in the buffers
@@ -252,28 +252,28 @@ void audio_gateway_start(void)
 	int ret;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_config.sw_codec = SW_CODEC_SBC;
+		sw_codec_cfg.sw_codec = SW_CODEC_SBC;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_config.sw_codec = SW_CODEC_LC3;
+		sw_codec_cfg.sw_codec = SW_CODEC_LC3;
 	}
 
 #if (CONFIG_STREAM_BIDIRECTIONAL)
-	sw_codec_config.decoder.enabled = true;
-	sw_codec_config.decoder.channel_mode = SW_CODEC_MONO;
+	sw_codec_cfg.decoder.enabled = true;
+	sw_codec_cfg.decoder.channel_mode = SW_CODEC_MONO;
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_config.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_config.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
 	}
 
 #if (CONFIG_TRANSPORT_CIS)
-	sw_codec_config.encoder.channel_mode = SW_CODEC_STEREO;
+	sw_codec_cfg.encoder.channel_mode = SW_CODEC_STEREO;
 #else
-	sw_codec_config.encoder.channel_mode = SW_CODEC_MONO;
+	sw_codec_cfg.encoder.channel_mode = SW_CODEC_MONO;
 #endif /* (CONFIG_TRANSPORT_CIS) */
-	sw_codec_config.encoder.enabled = true;
+	sw_codec_cfg.encoder.enabled = true;
 
 	audio_codec_start();
 
@@ -294,24 +294,24 @@ void audio_headset_start(void)
 	int ret;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_config.sw_codec = SW_CODEC_SBC;
+		sw_codec_cfg.sw_codec = SW_CODEC_SBC;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_config.sw_codec = SW_CODEC_LC3;
+		sw_codec_cfg.sw_codec = SW_CODEC_LC3;
 	}
 
 #if (CONFIG_STREAM_BIDIRECTIONAL)
-	sw_codec_config.encoder.enabled = true;
-	sw_codec_config.encoder.channel_mode = SW_CODEC_MONO;
+	sw_codec_cfg.encoder.enabled = true;
+	sw_codec_cfg.encoder.channel_mode = SW_CODEC_MONO;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_config.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_config.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
 	}
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 
-	sw_codec_config.decoder.channel_mode = SW_CODEC_MONO;
-	sw_codec_config.decoder.enabled = true;
+	sw_codec_cfg.decoder.channel_mode = SW_CODEC_MONO;
+	sw_codec_cfg.decoder.enabled = true;
 
 	audio_codec_start();
 
@@ -333,14 +333,14 @@ void audio_stop(void)
 
 	audio_codec_started = false;
 
-	if (!sw_codec_config.initialized) {
+	if (!sw_codec_cfg.initialized) {
 		LOG_WRN("Codec already unitialized");
 		return;
 	}
 
 	LOG_DBG("Stopping codec");
 	/* Aborting encoder thread before uninitializing */
-	if (sw_codec_config.encoder.enabled) {
+	if (sw_codec_cfg.encoder.enabled) {
 		k_thread_abort(encoder_thread_id);
 	}
 
@@ -354,9 +354,9 @@ void audio_stop(void)
 	ERR_CHK(ret);
 #endif /* ((NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_GATEWAY) && CONFIG_AUDIO_SOURCE_USB) */
 
-	ret = sw_codec_uninit(sw_codec_config);
+	ret = sw_codec_uninit(sw_codec_cfg);
 	ERR_CHK_MSG(ret, "Failed to uninit codec");
-	sw_codec_config.initialized = false;
+	sw_codec_cfg.initialized = false;
 
 	/* This will force a reinit when starting audio again, ensuring that
 	 * previous data is overwritten

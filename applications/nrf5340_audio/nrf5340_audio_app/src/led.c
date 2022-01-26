@@ -19,20 +19,20 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(led, CONFIG_LOG_LED_LEVEL);
 
-#define ACTIVE_LOW  1
+#define ACTIVE_LOW 1
 #define ACTIVE_HIGH 0
 
 #define BLINK_FREQ_MS 1000
 /* Maximum number of LED_UNITS. 1 RGB LED = 1 UNIT of 3 LEDS */
-#define LED_UNIT_MAX   10
+#define LED_UNIT_MAX 10
 #define NUM_COLORS_RGB 3
-#define BASE_10	       10
+#define BASE_10 10
 
 #define CORE_APP_STR "CORE_APP"
 #define CORE_NET_STR "CORE_NET"
 
-#define LABEL_AND_COMMA(node_id)       DT_LABEL(node_id),
-#define GPIO_AND_COMMA(node_id)	       DT_GPIO_PIN(node_id, gpios),
+#define LABEL_AND_COMMA(node_id) DT_LABEL(node_id),
+#define GPIO_AND_COMMA(node_id) DT_GPIO_PIN(node_id, gpios),
 #define GPIO_LABEL_AND_COMMMA(node_id) DT_GPIO_LABEL(node_id, gpios),
 #define GPIO_FLAGS_AND_COMMMA(node_id) DT_GPIO_FLAGS(node_id, gpios),
 
@@ -55,31 +55,31 @@ typedef enum {
 	LED_COLOR,
 } led_type_t;
 
-typedef struct {
+struct pin_dev {
 	int pin;
 	const struct device *dev;
 	bool pol;
-} pin_dev_t;
+};
 
-typedef struct {
+struct user_config {
 	bool blink;
 	led_color_t color;
-} user_cfg_t;
+};
 
-typedef struct {
+struct led_unit_cfg {
 	uint8_t led_no;
 	led_core_assigned_t core;
 	led_type_t unit_type;
 	union {
-		pin_dev_t mono;
-		pin_dev_t color[NUM_COLORS_RGB];
+		struct pin_dev mono;
+		struct pin_dev color[NUM_COLORS_RGB];
 	} type;
-	user_cfg_t user_cfg;
-} led_unit_cfg_t;
+	struct user_config user_cfg;
+};
 
 static uint8_t leds_num;
 static bool initialized;
-static led_unit_cfg_t led_units[LED_UNIT_MAX];
+static struct led_unit_cfg led_units[LED_UNIT_MAX];
 
 /**
  * @brief pin_configure wrapper. Initializes all LEDs to off.
@@ -226,7 +226,7 @@ static int led_device_tree_parse(void)
 /**
  * @brief Internal handling to turn a given LED on
  */
-static int led_on_int(pin_dev_t const *const pin_dev)
+static int led_on_int(struct pin_dev const *const pin_dev)
 {
 	return gpio_pin_set(pin_dev->dev, pin_dev->pin, !pin_dev->pol);
 }
@@ -234,7 +234,7 @@ static int led_on_int(pin_dev_t const *const pin_dev)
 /**
  * @brief Internal handling to turn a given LED off
  */
-static int led_off_int(pin_dev_t const *const pin_dev)
+static int led_off_int(struct pin_dev const *const pin_dev)
 {
 	return gpio_pin_set(pin_dev->dev, pin_dev->pin, pin_dev->pol);
 }

@@ -52,12 +52,6 @@ typedef enum {
 	BLE_EVT_NUM_EVTS
 } ble_evt_type_t;
 
-/**@brief  BLE event structure
- */
-typedef struct {
-	ble_evt_type_t type;
-} ble_evt_t;
-
 /**@brief	BLE data callback type.
  *
  * @param data			Pointer to received data

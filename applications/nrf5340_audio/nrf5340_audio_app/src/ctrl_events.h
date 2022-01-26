@@ -40,7 +40,7 @@ struct event_t {
 	event_source_t event_source;
 
 	union {
-		button_evt_t button_activity;
+		struct button_evt button_activity;
 		ble_evt_type_t link_activity;
 	};
 };

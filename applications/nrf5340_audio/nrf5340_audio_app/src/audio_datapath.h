@@ -73,7 +73,7 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
  *
  * @return 0 if successful, error otherwise
  */
-int audio_datapath_start(data_fifo_t *fifo_rx);
+int audio_datapath_start(struct data_fifo *fifo_rx);
 
 /**
  * @brief Stop the audio datapath module

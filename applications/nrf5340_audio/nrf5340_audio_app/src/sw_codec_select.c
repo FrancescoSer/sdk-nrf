@@ -22,7 +22,7 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(sw_codec_select);
 
-static sw_codec_config_t m_config;
+static struct sw_codec_config m_config;
 
 #if (CONFIG_SW_CODEC_SBC)
 static bool sbc_first_frame_received;
@@ -335,18 +335,18 @@ int sw_codec_decode(uint8_t const *const encoded_data, size_t encoded_size, bool
 	return 0;
 }
 
-int sw_codec_uninit(sw_codec_config_t sw_codec_config)
+int sw_codec_uninit(struct sw_codec_config sw_codec_cfg)
 {
 	int ret;
 
-	if (m_config.sw_codec != sw_codec_config.sw_codec) {
+	if (m_config.sw_codec != sw_codec_cfg.sw_codec) {
 		LOG_ERR("Trying to uninit a codec that is not first initialized");
 		return -ENODEV;
 	}
 	switch (m_config.sw_codec) {
 	case SW_CODEC_LC3:
 #if (CONFIG_SW_CODEC_LC3)
-		if (sw_codec_config.encoder.enabled) {
+		if (sw_codec_cfg.encoder.enabled) {
 			if (!m_config.encoder.enabled) {
 				LOG_ERR("Trying to uninit encoder, it has not been initialized");
 				return -EALREADY;
@@ -356,7 +356,7 @@ int sw_codec_uninit(sw_codec_config_t sw_codec_config)
 			m_config.encoder.enabled = false;
 		}
 
-		if (sw_codec_config.decoder.enabled) {
+		if (sw_codec_cfg.decoder.enabled) {
 			if (!m_config.decoder.enabled) {
 				LOG_WRN("Trying to uninit decoder, it has not been initialized");
 				return -EALREADY;
@@ -382,9 +382,9 @@ int sw_codec_uninit(sw_codec_config_t sw_codec_config)
 	return 0;
 }
 
-int sw_codec_init(sw_codec_config_t sw_codec_config)
+int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 {
-	switch (sw_codec_config.sw_codec) {
+	switch (sw_codec_cfg.sw_codec) {
 	case SW_CODEC_LC3: {
 #if (CONFIG_SW_CODEC_LC3)
 		int ret;
@@ -397,7 +397,7 @@ int sw_codec_init(sw_codec_config_t sw_codec_config)
 			RET_IF_ERR(ret);
 		}
 
-		if (sw_codec_config.encoder.enabled) {
+		if (sw_codec_cfg.encoder.enabled) {
 			if (m_config.encoder.enabled) {
 				LOG_WRN("The LC3 encoder is already initialized");
 				return -EALREADY;
@@ -406,20 +406,20 @@ int sw_codec_init(sw_codec_config_t sw_codec_config)
 
 			ret = sw_codec_lc3_enc_init(CONFIG_AUDIO_SAMPLE_RATE_HZ,
 						    CONFIG_AUDIO_CONTAINER_BITS, framesize_us,
-						    sw_codec_config.encoder.bitrate,
-						    sw_codec_config.encoder.channel_mode,
+						    sw_codec_cfg.encoder.bitrate,
+						    sw_codec_cfg.encoder.channel_mode,
 						    &pcm_bytes_req_enc);
 			RET_IF_ERR(ret);
 		}
 
-		if (sw_codec_config.decoder.enabled) {
+		if (sw_codec_cfg.decoder.enabled) {
 			if (m_config.decoder.enabled) {
 				LOG_WRN("The LC3 decoder is already initialized");
 				return -EALREADY;
 			}
 			ret = sw_codec_lc3_dec_init(CONFIG_AUDIO_SAMPLE_RATE_HZ,
 						    CONFIG_AUDIO_CONTAINER_BITS, framesize_us,
-						    sw_codec_config.decoder.channel_mode);
+						    sw_codec_cfg.decoder.channel_mode);
 			RET_IF_ERR(ret);
 		}
 		break;
@@ -459,10 +459,10 @@ int sw_codec_init(sw_codec_config_t sw_codec_config)
 		return -ENODEV;
 	}
 	default:
-		LOG_ERR("Unsupported codec: %d", sw_codec_config.sw_codec);
+		LOG_ERR("Unsupported codec: %d", sw_codec_cfg.sw_codec);
 		return false;
 	}
 
-	m_config = sw_codec_config;
+	m_config = sw_codec_cfg;
 	return 0;
 }

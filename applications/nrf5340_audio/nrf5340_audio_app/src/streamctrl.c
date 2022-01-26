@@ -45,14 +45,14 @@ typedef enum {
 	STATE_DISCONNECTED
 } stream_state_t;
 
-typedef struct {
+struct ble_iso_data {
 	uint8_t data[CONFIG_BT_ISO_RX_MTU];
 	size_t data_size;
 	bool bad_frame;
 	uint32_t ts;
-} __packed ble_iso_data_t;
+} __packed;
 
-DATA_FIFO_DEFINE(ble_fifo_rx, CONFIG_BUF_BLE_RX_PACKET_NUM, WB_UP(sizeof(ble_iso_data_t)));
+DATA_FIFO_DEFINE(ble_fifo_rx, CONFIG_BUF_BLE_RX_PACKET_NUM, WB_UP(sizeof(struct ble_iso_data)));
 
 static struct k_thread audio_datapath_thread_data;
 static k_tid_t audio_datapath_thread_id;
@@ -130,7 +130,7 @@ static void ble_iso_rx_data_handler(uint8_t const *const p_data, size_t data_siz
 	}
 
 	int ret;
-	ble_iso_data_t *iso_received = NULL;
+	struct ble_iso_data *iso_received = NULL;
 
 #if (CONFIG_BLE_ISO_TEST_PATTERN)
 	ble_test_pattern_receive(p_data, data_size, bad_frame);
@@ -171,7 +171,8 @@ static void ble_iso_rx_data_handler(uint8_t const *const p_data, size_t data_siz
 	iso_received->data_size = data_size;
 	iso_received->ts = ts;
 
-	ret = data_fifo_block_lock(&ble_fifo_rx, (void *)&iso_received, sizeof(ble_iso_data_t));
+	ret = data_fifo_block_lock(&ble_fifo_rx, (void *)&iso_received,
+				   sizeof(struct ble_iso_data));
 	ERR_CHK_MSG(ret, "Failed to lock block");
 }
 #endif /* ((NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET) || CONFIG_TRANSPORT_CIS) */
@@ -180,7 +181,7 @@ static void ble_iso_rx_data_handler(uint8_t const *const p_data, size_t data_siz
 static void audio_datapath_thread(void *dummy1, void *dummy2, void *dummy3)
 {
 	int ret;
-	ble_iso_data_t *iso_received = NULL;
+	struct ble_iso_data *iso_received = NULL;
 	size_t iso_received_size;
 
 	while (1) {
@@ -303,7 +304,7 @@ static int m_ble_transport_init(void)
 
 /**** Event handlers ****/
 /* Handle button activity events */
-static void m_button_evt_handler(button_evt_t event)
+static void m_button_evt_handler(struct button_evt event)
 {
 	int ret;
 	static uint32_t test_tone_hz;
@@ -714,10 +715,11 @@ int streamctrl_start(void)
 	ret = data_fifo_init(&ble_fifo_rx);
 	ERR_CHK_MSG(ret, "Failed to set up ble_rx FIFO");
 
-	audio_datapath_thread_id = k_thread_create(
-		&audio_datapath_thread_data, audio_datapath_thread_stack,
-		CONFIG_AUDIO_DATAPATH_STACK_SIZE, (k_thread_entry_t)audio_datapath_thread, NULL,
-		NULL, NULL, K_PRIO_PREEMPT(CONFIG_AUDIO_DATAPATH_THREAD_PRIO), 0, K_NO_WAIT);
+	audio_datapath_thread_id =
+		k_thread_create(&audio_datapath_thread_data, audio_datapath_thread_stack,
+				CONFIG_AUDIO_DATAPATH_STACK_SIZE,
+				(k_thread_entry_t)audio_datapath_thread, NULL, NULL, NULL,
+				K_PRIO_PREEMPT(CONFIG_AUDIO_DATAPATH_THREAD_PRIO), 0, K_NO_WAIT);
 	ret = k_thread_name_set(audio_datapath_thread_id, "AUDIO DATAPATH");
 	ERR_CHK(ret);
 

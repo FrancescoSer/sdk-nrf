@@ -50,12 +50,12 @@ static struct bt_iso_chan iso_chan[CONFIG_BT_ISO_MAX_CHAN];
 static struct bt_iso_chan *iso_chan_p[CONFIG_BT_ISO_MAX_CHAN];
 static atomic_t iso_tx_pool_alloc[CONFIG_BT_ISO_MAX_CHAN];
 
-typedef struct {
+struct worker_data {
 	uint8_t channel;
 	uint8_t retries;
-} __aligned(4) work_data_t;
+} __aligned(4);
 
-K_MSGQ_DEFINE(kwork_msgq, sizeof(work_data_t), CONFIG_BT_ISO_MAX_CHAN, 4);
+K_MSGQ_DEFINE(kwork_msgq, sizeof(struct worker_data), CONFIG_BT_ISO_MAX_CHAN, 4);
 
 static K_SEM_DEFINE(sem_big_cmplt, 0, 1);
 static K_SEM_DEFINE(sem_big_term, 0, 1);
@@ -592,7 +592,7 @@ static void work_iso_cis_conn(struct k_work *work)
 {
 	int ret;
 	struct bt_iso_connect_param connect_param;
-	work_data_t work_data;
+	struct worker_data work_data;
 
 	ret = k_msgq_get(&kwork_msgq, &work_data, K_NO_WAIT);
 	ERR_CHK(ret);
@@ -831,7 +831,7 @@ int ble_trans_iso_cis_connect(struct bt_conn *conn)
 		ret = ble_acl_gateway_conn_peer_get(i, &conn_active);
 		ERR_CHK_MSG(ret, "Connection peer get error");
 		if (conn == conn_active) {
-			work_data_t work_data;
+			struct worker_data work_data;
 
 			work_data.channel = i;
 			work_data.retries = 0;

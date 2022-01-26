@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(ina231);
 #define INA231_DEFAULT_CFG_REG_VAL (0x4127)
 
 static const struct device *i2c_dev;
-static ina231_config_t const *ina231_cfg;
+static struct ina231_twi_config const *ina231_twi_cfg;
 
 static int reg_read(uint8_t addr, uint16_t *reg_val)
 {
@@ -31,7 +31,7 @@ static int reg_read(uint8_t addr, uint16_t *reg_val)
 	struct i2c_msg msgs[2];
 	uint16_t reg = 0;
 
-	if (i2c_dev == NULL || ina231_cfg == NULL) {
+	if (i2c_dev == NULL || ina231_twi_cfg == NULL) {
 		return -EIO;
 	}
 
@@ -48,7 +48,7 @@ static int reg_read(uint8_t addr, uint16_t *reg_val)
 	msgs[1].len = 2;
 	msgs[1].flags = I2C_MSG_RESTART | I2C_MSG_READ | I2C_MSG_STOP;
 
-	ret = i2c_transfer(i2c_dev, &msgs[0], 2, ina231_cfg->twi_addr);
+	ret = i2c_transfer(i2c_dev, &msgs[0], 2, ina231_twi_cfg->addr);
 
 	RET_IF_ERR(ret);
 
@@ -63,7 +63,7 @@ static int reg_write(uint8_t addr, uint16_t data)
 	struct i2c_msg msg;
 	uint8_t write_bytes[3];
 
-	if (i2c_dev == NULL || ina231_cfg == NULL) {
+	if (i2c_dev == NULL || ina231_twi_cfg == NULL) {
 		return -EIO;
 	}
 
@@ -78,19 +78,19 @@ static int reg_write(uint8_t addr, uint16_t data)
 	msg.len = 3;
 	msg.flags = I2C_MSG_WRITE | I2C_MSG_STOP;
 
-	ret = i2c_transfer(i2c_dev, &msg, 1, ina231_cfg->twi_addr);
+	ret = i2c_transfer(i2c_dev, &msg, 1, ina231_twi_cfg->addr);
 	RET_IF_ERR(ret);
 
 	return 0;
 }
 
-int ina231_open(ina231_config_t const *cfg)
+int ina231_open(struct ina231_twi_config const *cfg)
 {
-	if (ina231_cfg != NULL || cfg == NULL) {
+	if (ina231_twi_cfg != NULL || cfg == NULL) {
 		return -EINVAL;
 	}
 
-	ina231_cfg = cfg;
+	ina231_twi_cfg = cfg;
 
 	if (i2c_dev == NULL) {
 		i2c_dev = device_get_binding("I2C_1");
@@ -103,13 +103,13 @@ int ina231_open(ina231_config_t const *cfg)
 	return 0;
 }
 
-int ina231_close(ina231_config_t const *cfg)
+int ina231_close(struct ina231_twi_config const *cfg)
 {
-	if (cfg == NULL || ina231_cfg != cfg || ina231_cfg == NULL) {
+	if (cfg == NULL || ina231_twi_cfg != cfg || ina231_twi_cfg == NULL) {
 		return -EINVAL;
 	}
 
-	ina231_cfg = NULL;
+	ina231_twi_cfg = NULL;
 
 	return 0;
 }
@@ -138,7 +138,7 @@ int ina231_reset(void)
 	return ret;
 }
 
-int ina231_config_set(ina231_config_reg_t *config)
+int ina231_config_set(struct ina231_config_reg *config)
 {
 	uint16_t config_reg;
 
@@ -155,7 +155,7 @@ int ina231_config_set(ina231_config_reg_t *config)
 	return reg_write(REG_INA231_CONFIGURATION, config_reg);
 }
 
-int ina231_config_get(ina231_config_reg_t *config)
+int ina231_config_get(struct ina231_config_reg *config)
 {
 	int ret;
 

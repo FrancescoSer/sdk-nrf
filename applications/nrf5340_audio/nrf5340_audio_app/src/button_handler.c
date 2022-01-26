@@ -28,7 +28,7 @@ LOG_MODULE_REGISTER(button_handler, CONFIG_LOG_BUTTON_HANDLER_LEVEL);
 static bool debounce_is_ongoing;
 static struct gpio_callback btn_callback[BUTTONS_MAX];
 
-const static btn_cfg_t btn_cfg[] = {
+const static struct btn_config btn_cfg[] = {
 #define X(_name, _dts_alias) \
 	{ \
 		.btn_name = STRINGIFY(_name), \

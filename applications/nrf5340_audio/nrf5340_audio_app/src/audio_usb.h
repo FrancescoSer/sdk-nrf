@@ -17,7 +17,7 @@
  *
  * @return 0 if successful, error otherwise
  */
-int audio_usb_start(data_fifo_t *fifo_tx_in, data_fifo_t *fifo_rx_in);
+int audio_usb_start(struct data_fifo *fifo_tx_in, struct data_fifo *fifo_rx_in);
 
 /**
  * @brief Stop sending/receiving data

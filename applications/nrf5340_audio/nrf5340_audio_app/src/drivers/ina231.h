@@ -11,16 +11,16 @@
 
 #define REG_INA231_CONFIGURATION 0x00
 #define REG_INA231_SHUNT_VOLTAGE 0x01
-#define REG_INA231_BUS_VOLTAGE	 0x02
-#define REG_INA231_POWER	 0x03
-#define REG_INA231_CURRENT	 0x04
-#define REG_INA231_CALIBRATION	 0x05
-#define REG_INA231_MASK_ENABLE	 0x06
-#define REG_INA231_ALERT_LIMIT	 0x07
+#define REG_INA231_BUS_VOLTAGE 0x02
+#define REG_INA231_POWER 0x03
+#define REG_INA231_CURRENT 0x04
+#define REG_INA231_CALIBRATION 0x05
+#define REG_INA231_MASK_ENABLE 0x06
+#define REG_INA231_ALERT_LIMIT 0x07
 
-typedef struct {
-	uint8_t twi_addr;
-} ina231_config_t;
+struct ina231_twi_config {
+	uint8_t addr;
+};
 
 #define INA231_CONFIG_MODE_Pos (0)
 #define INA231_CONFIG_MODE_Msk (0x7UL << INA231_CONFIG_MODE_Pos)
@@ -34,55 +34,55 @@ typedef struct {
 #define INA231_CONFIG_AVG_Pos (9)
 #define INA231_CONFIG_AVG_Msk (0x7UL << INA231_CONFIG_AVG_Pos)
 
-#define INA231_CONFIG_MAGIC_ONE_Pos	(14)
-#define INA231_CONFIG_MAGIC_ONE_Msk	(0x1UL << INA231_CONFIG_MAGIC_ONE_Pos)
+#define INA231_CONFIG_MAGIC_ONE_Pos (14)
+#define INA231_CONFIG_MAGIC_ONE_Msk (0x1UL << INA231_CONFIG_MAGIC_ONE_Pos)
 #define INA231_CONFIG_MAGIC_ONE_Default (0x1UL)
 
 #define INA231_CONFIG_RST_Pos (15)
 #define INA231_CONFIG_RST_Msk (0x1UL << INA231_CONFIG_RST_Pos)
 
-#define INA231_MASK_ENABLE_LEN_Pos    (0)
-#define INA231_MASK_ENABLE_LEN_Msk    (0x1UL << INA231_MASK_ENABLE_LEN_Pos)
+#define INA231_MASK_ENABLE_LEN_Pos (0)
+#define INA231_MASK_ENABLE_LEN_Msk (0x1UL << INA231_MASK_ENABLE_LEN_Pos)
 #define INA231_MASK_ENABLE_LEN_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_APOL_Pos    (1)
-#define INA231_MASK_ENABLE_APOL_Msk    (0x1UL << INA231_MASK_ENABLE_APOL_Pos)
+#define INA231_MASK_ENABLE_APOL_Pos (1)
+#define INA231_MASK_ENABLE_APOL_Msk (0x1UL << INA231_MASK_ENABLE_APOL_Pos)
 #define INA231_MASK_ENABLE_APOL_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_OVF_Pos    (2)
-#define INA231_MASK_ENABLE_OVF_Msk    (0x1UL << INA231_MASK_ENABLE_OVF_Pos)
+#define INA231_MASK_ENABLE_OVF_Pos (2)
+#define INA231_MASK_ENABLE_OVF_Msk (0x1UL << INA231_MASK_ENABLE_OVF_Pos)
 #define INA231_MASK_ENABLE_OVF_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_CVRF_Pos    (3)
-#define INA231_MASK_ENABLE_CVRF_Msk    (0x1UL << INA231_MASK_ENABLE_CVRF_Pos)
+#define INA231_MASK_ENABLE_CVRF_Pos (3)
+#define INA231_MASK_ENABLE_CVRF_Msk (0x1UL << INA231_MASK_ENABLE_CVRF_Pos)
 #define INA231_MASK_ENABLE_CVRF_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_AFF_Pos    (4)
-#define INA231_MASK_ENABLE_AFF_Msk    (0x1UL << INA231_MASK_ENABLE_AFF_Pos)
+#define INA231_MASK_ENABLE_AFF_Pos (4)
+#define INA231_MASK_ENABLE_AFF_Msk (0x1UL << INA231_MASK_ENABLE_AFF_Pos)
 #define INA231_MASK_ENABLE_AFF_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_CNVR_Pos    (10)
-#define INA231_MASK_ENABLE_CNVR_Msk    (0x1UL << INA231_MASK_ENABLE_CNVR_Pos)
+#define INA231_MASK_ENABLE_CNVR_Pos (10)
+#define INA231_MASK_ENABLE_CNVR_Msk (0x1UL << INA231_MASK_ENABLE_CNVR_Pos)
 #define INA231_MASK_ENABLE_CNVR_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_POL_Pos    (11)
-#define INA231_MASK_ENABLE_POL_Msk    (0x1UL << INA231_MASK_ENABLE_POL_Pos)
+#define INA231_MASK_ENABLE_POL_Pos (11)
+#define INA231_MASK_ENABLE_POL_Msk (0x1UL << INA231_MASK_ENABLE_POL_Pos)
 #define INA231_MASK_ENABLE_POL_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_BUL_Pos    (12)
-#define INA231_MASK_ENABLE_BUL_Msk    (0x1UL << INA231_MASK_ENABLE_BUL_Pos)
+#define INA231_MASK_ENABLE_BUL_Pos (12)
+#define INA231_MASK_ENABLE_BUL_Msk (0x1UL << INA231_MASK_ENABLE_BUL_Pos)
 #define INA231_MASK_ENABLE_BUL_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_BOL_Pos    (13)
-#define INA231_MASK_ENABLE_BOL_Msk    (0x1UL << INA231_MASK_ENABLE_BOL_Pos)
+#define INA231_MASK_ENABLE_BOL_Pos (13)
+#define INA231_MASK_ENABLE_BOL_Msk (0x1UL << INA231_MASK_ENABLE_BOL_Pos)
 #define INA231_MASK_ENABLE_BOL_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_SUL_Pos    (14)
-#define INA231_MASK_ENABLE_SUL_Msk    (0x1UL << INA231_MASK_ENABLE_SUL_Pos)
+#define INA231_MASK_ENABLE_SUL_Pos (14)
+#define INA231_MASK_ENABLE_SUL_Msk (0x1UL << INA231_MASK_ENABLE_SUL_Pos)
 #define INA231_MASK_ENABLE_SUL_Enable (0x1UL)
 
-#define INA231_MASK_ENABLE_SOL_Pos    (15)
-#define INA231_MASK_ENABLE_SOL_Msk    (0x1UL << INA231_MASK_ENABLE_SOL_Pos)
+#define INA231_MASK_ENABLE_SOL_Pos (15)
+#define INA231_MASK_ENABLE_SOL_Msk (0x1UL << INA231_MASK_ENABLE_SOL_Pos)
 #define INA231_MASK_ENABLE_SOL_Enable (0x1UL)
 
 /* Number of measurements INA231 will do an average based on */
@@ -145,24 +145,24 @@ typedef enum {
 	INA231_CONFIG_MODE_SHUNT_BUS_CONT,
 } ina231_config_mode_t;
 
-typedef struct {
+struct ina231_config_reg {
 	ina231_config_avg_t avg; /* Number of samples averaged */
 	ina231_config_vbus_conv_time_t vbus_conv_time; /* Bus Voltage Conversion time */
 	ina231_config_vsh_conv_time_t vsh_conv_time; /* Shunt Voltage Coversion Time */
 	ina231_config_mode_t mode; /* Operating mode */
-} ina231_config_reg_t;
+};
 
 /**@brief Open the INA231 driver.
  *
  * @return  0 if successful, ret if not
  */
-int ina231_open(ina231_config_t const *p_cfg);
+int ina231_open(struct ina231_twi_config const *p_cfg);
 
 /**@brief Close the INA231 driver.
  *
  * @return  0 if successful, ret if not
  */
-int ina231_close(ina231_config_t const *p_cfg);
+int ina231_close(struct ina231_twi_config const *p_cfg);
 
 /**@brief Reset the INA231 device.
  *
@@ -174,13 +174,13 @@ int ina231_reset(void);
  *
  * @return  0 if successful, ret if not
  */
-int ina231_config_set(ina231_config_reg_t *p_config);
+int ina231_config_set(struct ina231_config_reg *p_config);
 
 /**@brief Read configuration register
  *
  * @return  0 if successful, ret if not
  */
-int ina231_config_get(ina231_config_reg_t *p_config);
+int ina231_config_get(struct ina231_config_reg *p_config);
 
 /**@brief Read shunt voltage register
  *

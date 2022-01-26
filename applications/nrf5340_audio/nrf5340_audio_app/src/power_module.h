@@ -30,29 +30,19 @@ typedef enum {
 	VDD2_NRF,
 } ina_name_t;
 
-typedef struct {
+struct power_module_data {
 	float current;
 	float power;
 	float bus_voltage;
 	float shunt_voltage;
-} power_module_data_t;
-
-typedef struct {
-	uint8_t address;
-	ina231_config_reg_t config;
-	power_module_data_t meas_data;
-	nrf_power_module_handler_t callback;
-	float power_lsb;
-	float current_lsb;
-	char name[RAIL_NAME_MAX_SIZE];
-} ina231_t;
+};
 
 /**@brief   Read the latest measurements from a given INA231
  *
  * @param   name    Name of the INA231 to be read from
  * @param   data    Container for the read data
  */
-void power_module_data_get(ina_name_t name, power_module_data_t *data);
+void power_module_data_get(ina_name_t name, struct power_module_data *data);
 
 /**@brief   Write configuration to INA231 to start measurements
  *

@@ -27,40 +27,40 @@ LOG_MODULE_REGISTER(pwr_module, CONFIG_LOG_POWER_MODULE_LEVEL);
 #define BASE_10 10
 
 /* Add addresses to all INA231 here */
-#define INA231_VBAT_ADDR       (0x44)
+#define INA231_VBAT_ADDR (0x44)
 #define INA231_VDD1_CODEC_ADDR (0x45)
 #define INA231_VDD2_CODEC_ADDR (0x41)
-#define INA231_VDD2_NRF_ADDR   (0x40)
+#define INA231_VDD2_NRF_ADDR (0x40)
 
 #define INA231_SHUNT_VOLTAGE_LSB (0.0000025f)
-#define INA231_BUS_VOLTAGE_LSB	 (0.00125f)
+#define INA231_BUS_VOLTAGE_LSB (0.00125f)
 
-#define INA231_VBAT_MAX_EXPECTED_CURRENT       (0.12f)
+#define INA231_VBAT_MAX_EXPECTED_CURRENT (0.12f)
 #define INA231_VDD1_CODEC_MAX_EXPECTED_CURRENT (0.02f)
 #define INA231_VDD2_CODEC_MAX_EXPECTED_CURRENT (0.02f)
-#define INA231_VDD2_NRF_MAX_EXPECTED_CURRENT   (0.02f)
+#define INA231_VDD2_NRF_MAX_EXPECTED_CURRENT (0.02f)
 
-#define INA231_VBAT_SHUNT_RESISTOR	 (0.51f)
+#define INA231_VBAT_SHUNT_RESISTOR (0.51f)
 #define INA231_VDD1_CODEC_SHUNT_RESISTOR (2.2f)
 #define INA231_VDD2_CODEC_SHUNT_RESISTOR (2.2f)
-#define INA231_VDD2_NRF_SHUNT_RESISTOR	 (1.0f)
+#define INA231_VDD2_NRF_SHUNT_RESISTOR (1.0f)
 
-#define INA231_VBAT_CURRENT_LSB	      (INA231_VBAT_MAX_EXPECTED_CURRENT / 32768.0f)
+#define INA231_VBAT_CURRENT_LSB (INA231_VBAT_MAX_EXPECTED_CURRENT / 32768.0f)
 #define INA231_VDD1_CODEC_CURRENT_LSB (INA231_VDD1_CODEC_MAX_EXPECTED_CURRENT / 32768.0f)
 #define INA231_VDD2_CODEC_CURRENT_LSB (INA231_VDD2_CODEC_MAX_EXPECTED_CURRENT / 32768.0f)
-#define INA231_VDD2_NRF_CURRENT_LSB   (INA231_VDD2_NRF_MAX_EXPECTED_CURRENT / 32768.0f)
+#define INA231_VDD2_NRF_CURRENT_LSB (INA231_VDD2_NRF_MAX_EXPECTED_CURRENT / 32768.0f)
 
-#define INA231_VBAT_POWER_LSB	    (25.0f * INA231_VBAT_CURRENT_LSB)
+#define INA231_VBAT_POWER_LSB (25.0f * INA231_VBAT_CURRENT_LSB)
 #define INA231_VDD1_CODEC_POWER_LSB (25.0f * INA231_VDD1_CODEC_CURRENT_LSB)
 #define INA231_VDD2_CODEC_POWER_LSB (25.0f * INA231_VDD2_CODEC_CURRENT_LSB)
-#define INA231_VDD2_NRF_POWER_LSB   (25.0f * INA231_VDD2_NRF_CURRENT_LSB)
+#define INA231_VDD2_NRF_POWER_LSB (25.0f * INA231_VDD2_NRF_CURRENT_LSB)
 
 #define INA231_VBAT_CALIBRATION (0.00512f / (INA231_VBAT_CURRENT_LSB * INA231_VBAT_SHUNT_RESISTOR))
-#define INA231_VDD1_CODEC_CALIBRATION \
+#define INA231_VDD1_CODEC_CALIBRATION                                                              \
 	(0.00512f / (INA231_VDD1_CODEC_CURRENT_LSB * INA231_VDD1_CODEC_SHUNT_RESISTOR))
-#define INA231_VDD2_CODEC_CALIBRATION \
+#define INA231_VDD2_CODEC_CALIBRATION                                                              \
 	(0.00512f / (INA231_VDD2_CODEC_CURRENT_LSB * INA231_VDD2_CODEC_SHUNT_RESISTOR))
-#define INA231_VDD2_NRF_CALIBRATION \
+#define INA231_VDD2_NRF_CALIBRATION                                                                \
 	(0.00512f / (INA231_VDD2_NRF_CURRENT_LSB * INA231_VDD2_NRF_SHUNT_RESISTOR))
 
 #define INA231_COUNT ((uint8_t)ARRAY_SIZE(ina231))
@@ -82,8 +82,18 @@ static uint8_t configured_avg = INA231_CONFIG_AVG_1024;
 /* Calculate the total time for measurements and add 10% due to thread being lowest priority */
 static uint8_t measurement_timeout_seconds;
 
+struct ina231_conf {
+	uint8_t address;
+	struct ina231_config_reg config;
+	struct power_module_data meas_data;
+	nrf_power_module_handler_t callback;
+	float power_lsb;
+	float current_lsb;
+	char name[RAIL_NAME_MAX_SIZE];
+};
+
 /* Add entry for each INA231 here */
-static ina231_t ina231[] = {
+static struct ina231_conf ina231[] = {
 	{ .address = INA231_VBAT_ADDR,
 	  .callback = ina231_measurements_print,
 	  .power_lsb = INA231_VBAT_POWER_LSB,
@@ -106,8 +116,8 @@ static ina231_t ina231[] = {
 	  .name = "  VDD2_NRF" },
 };
 
-static ina231_config_t ina231_cfg = {
-	.twi_addr = 0,
+static struct ina231_twi_config ina231_twi_cfg = {
+	.addr = 0,
 };
 
 static struct k_thread power_module_data;
@@ -119,7 +129,7 @@ K_SEM_DEFINE(sem_pwr_module, 0, 1);
  */
 static void ina231_measurements_print(uint8_t rail)
 {
-	power_module_data_t data;
+	struct power_module_data data;
 
 	power_module_data_get(rail, &data);
 
@@ -142,9 +152,9 @@ static int ina231_register_values_get(void)
 	/* Check all INAs that are started */
 	for (uint8_t i = 0; i < INA231_COUNT; i++) {
 		if (ina231_active_mask & (1 << i)) {
-			ina231_cfg.twi_addr = ina231[i].address;
+			ina231_twi_cfg.addr = ina231[i].address;
 
-			ret = ina231_open(&ina231_cfg);
+			ret = ina231_open(&ina231_twi_cfg);
 			RET_IF_ERR(ret);
 
 			uint16_t mask_enable;
@@ -182,7 +192,7 @@ static int ina231_register_values_get(void)
 				ina231_data_ready_mask |= (1 << i);
 			}
 
-			ret = ina231_close(&ina231_cfg);
+			ret = ina231_close(&ina231_twi_cfg);
 			RET_IF_ERR(ret);
 		}
 	}
@@ -301,9 +311,9 @@ static void power_module_thread(void *dummy1, void *dummy2, void *dummy3)
 	}
 }
 
-void power_module_data_get(ina_name_t name, power_module_data_t *data)
+void power_module_data_get(ina_name_t name, struct power_module_data *data)
 {
-	memcpy(data, &ina231[name].meas_data, sizeof(power_module_data_t));
+	memcpy(data, &ina231[name].meas_data, sizeof(struct power_module_data));
 	ina231_data_ready_mask &= ~(1U << name);
 
 	/* Every config mode (Enum) below INA231_CONFIG_MODE_SHUNT_CONT
@@ -386,9 +396,9 @@ int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t d
 		ina231[name].callback = data_handler;
 	}
 
-	ina231_cfg.twi_addr = ina231[name].address;
+	ina231_twi_cfg.addr = ina231[name].address;
 
-	ret = ina231_open(&ina231_cfg);
+	ret = ina231_open(&ina231_twi_cfg);
 	RET_IF_ERR(ret);
 
 	uint16_t mask_enable;
@@ -417,7 +427,7 @@ int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t d
 	ret = ina231_config_set(&ina231[name].config);
 	RET_IF_ERR(ret);
 
-	ret = ina231_close(&ina231_cfg);
+	ret = ina231_close(&ina231_twi_cfg);
 	RET_IF_ERR(ret);
 
 	ina231_active_mask |= (1 << name);
@@ -434,9 +444,9 @@ int power_module_measurement_stop(ina_name_t name)
 	ina231_active_mask &= ~(1U << name);
 	ina231_data_ready_mask &= ~(1U << name);
 
-	ina231_cfg.twi_addr = ina231[name].address;
+	ina231_twi_cfg.addr = ina231[name].address;
 
-	ret = ina231_open(&ina231_cfg);
+	ret = ina231_open(&ina231_twi_cfg);
 	RET_IF_ERR(ret);
 
 	ina231[name].config.mode = INA231_CONFIG_MODE_POWER_DOWN_CONT;
@@ -444,7 +454,7 @@ int power_module_measurement_stop(ina_name_t name)
 	ret = ina231_config_set(&ina231[name].config);
 	RET_IF_ERR(ret);
 
-	ret = ina231_close(&ina231_cfg);
+	ret = ina231_close(&ina231_twi_cfg);
 	RET_IF_ERR(ret);
 
 	return 0;
@@ -455,8 +465,8 @@ int power_module_init(void)
 	int ret;
 
 	for (uint8_t i = 0; i < INA231_COUNT; i++) {
-		ina231_cfg.twi_addr = ina231[i].address;
-		ret = ina231_open(&ina231_cfg);
+		ina231_twi_cfg.addr = ina231[i].address;
+		ret = ina231_open(&ina231_twi_cfg);
 		RET_IF_ERR(ret);
 
 		ret = ina231_reset();
@@ -485,7 +495,7 @@ int power_module_init(void)
 		ret = ina231_calibration_set(calib);
 		RET_IF_ERR(ret);
 
-		ret = ina231_close(&ina231_cfg);
+		ret = ina231_close(&ina231_twi_cfg);
 		RET_IF_ERR(ret);
 
 		ret = power_module_measurement_stop((ina_name_t)i);

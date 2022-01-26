@@ -18,7 +18,7 @@ static struct k_spinlock lock;
 /** @brief Checks that the elements in the msgq and slab are legal.
  * I.e. the number of msgq elements cannot be more than mem blocks used.
  */
-static int msgq_slab_legal_used_elements(data_fifo_t *data_fifo, uint32_t *msgq_num_used_in,
+static int msgq_slab_legal_used_elements(struct data_fifo *data_fifo, uint32_t *msgq_num_used_in,
 					 uint32_t *slab_blocks_num_used_in)
 {
 	/* Lock so msgq and slab reads are in sync */
@@ -43,7 +43,8 @@ static int msgq_slab_legal_used_elements(data_fifo_t *data_fifo, uint32_t *msgq_
 	return 0;
 }
 
-int data_fifo_pointer_first_vacant_get(data_fifo_t *data_fifo, void **data, k_timeout_t timeout)
+int data_fifo_pointer_first_vacant_get(struct data_fifo *data_fifo, void **data,
+				       k_timeout_t timeout)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(data_fifo->initialized);
@@ -53,7 +54,7 @@ int data_fifo_pointer_first_vacant_get(data_fifo_t *data_fifo, void **data, k_ti
 	return ret;
 }
 
-int data_fifo_block_lock(data_fifo_t *data_fifo, void **data, size_t size)
+int data_fifo_block_lock(struct data_fifo *data_fifo, void **data, size_t size)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(data_fifo->initialized);
@@ -67,7 +68,7 @@ int data_fifo_block_lock(data_fifo_t *data_fifo, void **data, size_t size)
 		return -EINVAL;
 	}
 
-	data_fifo_msgq_t msgq_tmp;
+	struct data_fifo_msgq msgq_tmp;
 
 	msgq_tmp.block_ptr = *data;
 	msgq_tmp.size = size;
@@ -85,14 +86,14 @@ int data_fifo_block_lock(data_fifo_t *data_fifo, void **data, size_t size)
 	return 0;
 }
 
-int data_fifo_pointer_last_filled_get(data_fifo_t *data_fifo, void **data, size_t *size,
+int data_fifo_pointer_last_filled_get(struct data_fifo *data_fifo, void **data, size_t *size,
 				      k_timeout_t timeout)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(data_fifo->initialized);
 	int ret;
 
-	data_fifo_msgq_t msgq_tmp;
+	struct data_fifo_msgq msgq_tmp;
 
 	ret = k_msgq_get(&data_fifo->msgq, &msgq_tmp, timeout);
 	if (ret) {
@@ -104,7 +105,7 @@ int data_fifo_pointer_last_filled_get(data_fifo_t *data_fifo, void **data, size_
 	return 0;
 }
 
-int data_fifo_block_free(data_fifo_t *data_fifo, void **data)
+int data_fifo_block_free(struct data_fifo *data_fifo, void **data)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(data_fifo->initialized);
@@ -114,7 +115,7 @@ int data_fifo_block_free(data_fifo_t *data_fifo, void **data)
 	return 0;
 }
 
-int data_fifo_num_used_get(data_fifo_t *data_fifo, uint32_t *alloced_num, uint32_t *locked_num)
+int data_fifo_num_used_get(struct data_fifo *data_fifo, uint32_t *alloced_num, uint32_t *locked_num)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(data_fifo->initialized);
@@ -134,7 +135,7 @@ int data_fifo_num_used_get(data_fifo_t *data_fifo, uint32_t *alloced_num, uint32
 	return ret;
 }
 
-int data_fifo_init(data_fifo_t *data_fifo)
+int data_fifo_init(struct data_fifo *data_fifo)
 {
 	__ASSERT_NO_MSG(data_fifo != NULL);
 	__ASSERT_NO_MSG(!data_fifo->initialized);
@@ -143,7 +144,7 @@ int data_fifo_init(data_fifo_t *data_fifo)
 	__ASSERT_NO_MSG((data_fifo->block_size_max % WB_UP(1)) == 0);
 	int ret;
 
-	k_msgq_init(&data_fifo->msgq, data_fifo->msgq_buffer, sizeof(data_fifo_msgq_t),
+	k_msgq_init(&data_fifo->msgq, data_fifo->msgq_buffer, sizeof(struct data_fifo_msgq),
 		    data_fifo->elements_max);
 
 	ret = k_mem_slab_init(&data_fifo->mem_slab, data_fifo->slab_buffer,

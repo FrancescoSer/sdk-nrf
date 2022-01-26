@@ -34,16 +34,16 @@ typedef enum { BUTTON_PRESS } button_action_t;
 
 /** Button event
  */
-typedef struct {
+struct button_evt {
 	button_pin_t button_pin;
 	button_action_t button_action;
-} button_evt_t;
+};
 
-typedef struct {
+struct btn_config {
 	const char *btn_name;
 	uint8_t btn_pin;
 	uint32_t btn_cfg_mask;
-} btn_cfg_t;
+};
 
 /** @brief Initialize button handler, with buttons defined in @ref BUTTONS_LIST.
  *

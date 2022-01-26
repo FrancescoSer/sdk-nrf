@@ -14,12 +14,12 @@
 /* The queue elements hold a pointer to a memory block in a slab and the
  * number of bytes written to that block.
  */
-typedef struct {
+struct data_fifo_msgq {
 	void *block_ptr;
 	size_t size;
-} data_fifo_msgq_t;
+};
 
-typedef struct {
+struct data_fifo {
 	char *msgq_buffer;
 	char *slab_buffer;
 	struct k_mem_slab mem_slab;
@@ -27,18 +27,18 @@ typedef struct {
 	uint32_t elements_max;
 	size_t block_size_max;
 	bool initialized;
-} data_fifo_t;
+};
 
-#define DATA_FIFO_DEFINE(name, elements_max_in, block_size_max_in) \
-	char __aligned(WB_UP(1)) \
-		_msgq_buffer_##name[(elements_max_in) * sizeof(data_fifo_msgq_t)] = { 0 }; \
-	char __aligned(WB_UP(1)) \
-		_slab_buffer_##name[(elements_max_in) * (block_size_max_in)] = { 0 }; \
-	data_fifo_t name = { .msgq_buffer = _msgq_buffer_##name, \
-			     .slab_buffer = _slab_buffer_##name, \
-			     .block_size_max = block_size_max_in, \
-			     .elements_max = elements_max_in, \
-			     .initialized = false }
+#define DATA_FIFO_DEFINE(name, elements_max_in, block_size_max_in)                                 \
+	char __aligned(WB_UP(1))                                                                   \
+		_msgq_buffer_##name[(elements_max_in) * sizeof(struct data_fifo_msgq)] = { 0 };    \
+	char __aligned(WB_UP(1))                                                                   \
+		_slab_buffer_##name[(elements_max_in) * (block_size_max_in)] = { 0 };              \
+	struct data_fifo name = { .msgq_buffer = _msgq_buffer_##name,                              \
+				  .slab_buffer = _slab_buffer_##name,                              \
+				  .block_size_max = block_size_max_in,                             \
+				  .elements_max = elements_max_in,                                 \
+				  .initialized = false }
 
 /**
  * @brief Get pointer to first vacant block in slab.
@@ -58,7 +58,8 @@ typedef struct {
  * @retval 0 Memory allocated.
  * @retval Return values from k_mem_slab_alloc.
  */
-int data_fifo_pointer_first_vacant_get(data_fifo_t *data_fifo, void **data, k_timeout_t timeout);
+int data_fifo_pointer_first_vacant_get(struct data_fifo *data_fifo, void **data,
+				       k_timeout_t timeout);
 
 /**
  * @brief Confirm that memory block use has finished
@@ -80,7 +81,7 @@ int data_fifo_pointer_first_vacant_get(data_fifo_t *data_fifo, void **data, k_ti
  *			Since data has already been added to the slab, there
  *			must be space in the message queue.
  */
-int data_fifo_block_lock(data_fifo_t *data_fifo, void **data, size_t size);
+int data_fifo_block_lock(struct data_fifo *data_fifo, void **data, size_t size);
 
 /**
  * @brief Get pointer to first (oldest) filled block in slab.
@@ -100,7 +101,7 @@ int data_fifo_block_lock(data_fifo_t *data_fifo, void **data, size_t size);
  * @retval 0 Memory pointer retrieved.
  * @retval Return values from k_msgq_get.
  */
-int data_fifo_pointer_last_filled_get(data_fifo_t *data_fifo, void **data, size_t *size,
+int data_fifo_pointer_last_filled_get(struct data_fifo *data_fifo, void **data, size_t *size,
 				      k_timeout_t timeout);
 
 /**
@@ -114,7 +115,7 @@ int data_fifo_pointer_last_filled_get(data_fifo_t *data_fifo, void **data, size_
  * @retval 0	Memory block is freed.
  * @retval Return values from k_mem_slab_free.
  */
-int data_fifo_block_free(data_fifo_t *data_fifo, void **data);
+int data_fifo_block_free(struct data_fifo *data_fifo, void **data);
 
 /**
  * @brief See how many alloced and locked blocks are in the system.
@@ -128,7 +129,8 @@ int data_fifo_block_free(data_fifo_t *data_fifo, void **data);
  *			and slabs. If an error occurs, parameters
  *			will be set to UINT32_MAX.
  */
-int data_fifo_num_used_get(data_fifo_t *data_fifo, uint32_t *alloced_num, uint32_t *locked_num);
+int data_fifo_num_used_get(struct data_fifo *data_fifo, uint32_t *alloced_num,
+			   uint32_t *locked_num);
 
 /**
  * @brief Initialise the data_fifo.
@@ -138,6 +140,6 @@ int data_fifo_num_used_get(data_fifo_t *data_fifo, uint32_t *alloced_num, uint32
  * @retval 0		Success
  * @retval Return values from k_mem_slab_init.
  */
-int data_fifo_init(data_fifo_t *data_fifo);
+int data_fifo_init(struct data_fifo *data_fifo);
 
 #endif /* _DATA_FIFO_H_ */

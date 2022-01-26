@@ -61,27 +61,27 @@ typedef enum {
 	AUDIO_CH_NUM,
 } audio_channel_t;
 
-typedef struct {
+struct sw_codec_encoder {
 	bool enabled;
 	int bitrate;
 	sw_codec_select_ch_t channel_mode;
 	audio_channel_t audio_ch; /**< Only used if channel mode is mono */
-} sw_codec_encoder_t;
+};
 
-typedef struct {
+struct sw_codec_decoder {
 	bool enabled;
 	sw_codec_select_ch_t channel_mode;
 	audio_channel_t audio_ch; /**< Only used if channel mode is mono */
-} sw_codec_decoder_t;
+};
 
 /** @brief  Sw_codec configuration structure
  */
-typedef struct {
+struct sw_codec_config {
 	sw_codec_select_t sw_codec; /**< sw_codec to be used, e.g. LC3, SBC etc */
-	sw_codec_decoder_t decoder; /**< Struct containing settings for decoder */
-	sw_codec_encoder_t encoder; /**< Struct containing settings for encoder */
+	struct sw_codec_decoder decoder; /**< Struct containing settings for decoder */
+	struct sw_codec_encoder encoder; /**< Struct containing settings for encoder */
 	bool initialized; /**< Status of codec */
-} sw_codec_config_t;
+};
 
 /**@brief	Encode PCM data and output encoded data
  *
@@ -114,20 +114,20 @@ int sw_codec_decode(uint8_t const *const encoded_data, size_t encoded_size, bool
  *
  * @note	Must be called before calling init for another sw_codec
  *
- * @param[in]	sw_codec_config	Struct to tear down sw_codec
+ * @param[in]	sw_codec_cfg	Struct to tear down sw_codec
  *
  * @return	0 if success, error codes depends on sw_codec selected
  */
-int sw_codec_uninit(sw_codec_config_t sw_codec_config);
+int sw_codec_uninit(struct sw_codec_config sw_codec_cfg);
 
 /**@brief	Initialize sw_codec and statically or dynamically
  *		allocate memory to be used, depending on selected codec
  *		and its configuration.
  *
- * @param[in]	sw_codec_config	Struct to set up sw_codec
+ * @param[in]	sw_codec_cfg	Struct to set up sw_codec
  *
  * @return	0 if success, error codes depends on sw_codec selected
  */
-int sw_codec_init(sw_codec_config_t sw_codec_config);
+int sw_codec_init(struct sw_codec_config sw_codec_cfg);
 
 #endif /* _SW_CODEC_SELECT_H_ */
