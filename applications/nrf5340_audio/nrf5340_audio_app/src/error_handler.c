@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "error_handler.h"
-
 #include <zephyr.h>
 #include <sys/reboot.h>
 #include <fatal.h>

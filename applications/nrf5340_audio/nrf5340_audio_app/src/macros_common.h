@@ -9,8 +9,6 @@
 
 #include <errno.h>
 
-#include "error_handler.h"
-
 /* Error check. If != 0, print err code and call _SysFatalErrorHandler in main.
  * For debug mode all LEDs are turned on in case of an error.
  */
