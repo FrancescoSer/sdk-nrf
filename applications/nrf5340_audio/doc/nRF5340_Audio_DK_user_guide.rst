@@ -38,17 +38,17 @@ IN NO EVENT SHALL NORDIC SEMICONDUCTOR ASA OR CONTRIBUTORS BE LIABLE FOR ANY DIR
 Parts needed for demo
 *********************
 
-nRF5340 Audio DK 0.8.X (PCA10121) top view
+nRF5340 Audio DK 0.9.X (PCA10121) top view
 ==========================================
 
-.. image:: images/nrf5340_audio_dk_0.8.0_top.png
-   :alt:   nrf5340_audio_dk_0.8.0 top view
+.. image:: ../../../boards/arm/nrf5340_audio_dk_nrf5340/doc/img/nrf5340_audio_dk_nrf_5340_front.jpg
+   :alt:   nrf5340_audio_dk front/top view
 
-nRF5340 Audio DK 0.8.X (PCA10121) bottom view
+nRF5340 Audio DK 0.9.X (PCA10121) bottom view
 =============================================
 
-.. image:: images/nrf5340_audio_dk_0.8.0_bot.png
-   :alt: nrf5340_audio_dk_0.8.0 bottom view
+.. image:: ../../../boards/arm/nrf5340_audio_dk_nrf5340/doc/img/nrf5340_audio_dk_nrf_5340_back.jpg
+   :alt: nrf5340_audio_dk back/bottom view
 
 Included
 ========
