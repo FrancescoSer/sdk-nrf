@@ -1,5 +1,4 @@
 [global_config]
-  handle_size = 0
   suppress_multiple_term_dialog = True
 [keybindings]
 [profiles]
@@ -35,13 +34,13 @@
       parent = child2
       order = 0
       profile = default
-      command = minicom --color=on -b 1000000 -8 --device /dev/ttyACM0; bash
+      command = python3 scripts/open_terminator.py 0; sh
     [[[terminal4]]]
       type = Terminal
       parent = child2
       order = 1
       profile = default
-      command = minicom --color=on -b 1000000 -8 --device /dev/ttyACM2; bash
+      command = python3 scripts/open_terminator.py 1; sh
     [[[child5]]]
       type = HPaned
       parent = child1
@@ -53,7 +52,7 @@
       parent = child5
       order = 0
       profile = default
-      command = minicom --color=on -b 1000000 -8 --device /dev/ttyACM4; bash
+      command = python3 scripts/open_terminator.py 2; sh
     [[[terminal7]]]
       type = Terminal
       parent = child5
