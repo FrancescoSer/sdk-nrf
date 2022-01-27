@@ -23,12 +23,12 @@ typedef void (*nrf_power_module_handler_t)(uint8_t rail);
  * VDD2_CODEC	= 1.8V rail for CS47L63
  * VDD2_NRF	= NRF5340
  */
-typedef enum {
+enum ina_name {
 	VBAT,
 	VDD1_CODEC,
 	VDD2_CODEC,
 	VDD2_NRF,
-} ina_name_t;
+};
 
 struct power_module_data {
 	float current;
@@ -42,7 +42,7 @@ struct power_module_data {
  * @param   name    Name of the INA231 to be read from
  * @param   data    Container for the read data
  */
-void power_module_data_get(ina_name_t name, struct power_module_data *data);
+void power_module_data_get(enum ina_name name, struct power_module_data *data);
 
 /**@brief   Write configuration to INA231 to start measurements
  *
@@ -54,7 +54,7 @@ void power_module_data_get(ina_name_t name, struct power_module_data *data);
  *
  * @return  0 if successful
  */
-int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t data_handler);
+int power_module_measurement_start(enum ina_name name, nrf_power_module_handler_t data_handler);
 
 /**@brief   Stop continuous measurements from given INA231
  *
@@ -62,7 +62,7 @@ int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t d
  *
  * @return  0 if successful
  */
-int power_module_measurement_stop(ina_name_t name);
+int power_module_measurement_stop(enum ina_name name);
 
 /**@brief   Getter for average value of the INAs
  *

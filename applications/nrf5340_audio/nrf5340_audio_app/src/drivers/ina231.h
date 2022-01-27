@@ -86,7 +86,7 @@ struct ina231_twi_config {
 #define INA231_MASK_ENABLE_SOL_Enable (0x1UL)
 
 /* Number of measurements INA231 will do an average based on */
-typedef enum {
+enum ina231_config_avg {
 	INA231_CONFIG_AVG_1,
 	INA231_CONFIG_AVG_4,
 	INA231_CONFIG_AVG_16,
@@ -96,13 +96,13 @@ typedef enum {
 	INA231_CONFIG_AVG_512,
 	INA231_CONFIG_AVG_1024,
 	INA231_CONFIG_AVG_NO_OF_VALUES,
-} ina231_config_avg_t;
+};
 
 /* Number of measurements INA231 will do an average based on */
 static const int ina231_config_avg_to_num[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
 
 /* VBUS conversion time */
-typedef enum {
+enum ina231_config_vbus_conv_time {
 	INA231_CONFIG_VBUS_CONV_TIME_140_US,
 	INA231_CONFIG_VBUS_CONV_TIME_204_US,
 	INA231_CONFIG_VBUS_CONV_TIME_332_US,
@@ -112,13 +112,13 @@ typedef enum {
 	INA231_CONFIG_VBUS_CONV_TIME_4156_US,
 	INA231_CONFIG_VBUS_CONV_TIME_8244_US,
 	INA231_CONFIG_VBUS_NO_OF_VALUES,
-} ina231_config_vbus_conv_time_t;
+};
 
 /* VBUS conversion time us*/
 static const int ina231_vbus_conv_time_to_us[] = { 140, 204, 332, 588, 1100, 2116, 4156, 8244 };
 
 /* Volt over shunt resistor conversion time */
-typedef enum {
+enum ina231_config_vsh_conv_time {
 	INA231_CONFIG_VSH_CONV_TIME_140_US,
 	INA231_CONFIG_VSH_CONV_TIME_204_US,
 	INA231_CONFIG_VSH_CONV_TIME_332_US,
@@ -128,13 +128,13 @@ typedef enum {
 	INA231_CONFIG_VSH_CONV_TIME_4156_US,
 	INA231_CONFIG_VSH_CONV_TIME_8244_US,
 	INA231_CONFIG_VSH_NO_OF_VALUES,
-} ina231_config_vsh_conv_time_t;
+};
 
 /* Volt over shunt resistor conversion time */
 static const int ina231_vsh_conv_time_to_us[] = { 140, 204, 332, 588, 1100, 2116, 4156, 8244 };
 
 /* Measurement modes, one-shot or continuous */
-typedef enum {
+enum ina231_config_mode {
 	INA231_CONFIG_MODE_POWER_DOWN,
 	INA231_CONFIG_MODE_SHUNT_TRIG,
 	INA231_CONFIG_MODE_BUS_TRIG,
@@ -143,13 +143,13 @@ typedef enum {
 	INA231_CONFIG_MODE_SHUNT_CONT,
 	INA231_CONFIG_MODE_BUS_CONT,
 	INA231_CONFIG_MODE_SHUNT_BUS_CONT,
-} ina231_config_mode_t;
+};
 
 struct ina231_config_reg {
-	ina231_config_avg_t avg; /* Number of samples averaged */
-	ina231_config_vbus_conv_time_t vbus_conv_time; /* Bus Voltage Conversion time */
-	ina231_config_vsh_conv_time_t vsh_conv_time; /* Shunt Voltage Coversion Time */
-	ina231_config_mode_t mode; /* Operating mode */
+	enum ina231_config_avg avg; /* Number of samples averaged */
+	enum ina231_config_vbus_conv_time vbus_conv_time; /* Bus Voltage Conversion time */
+	enum ina231_config_vsh_conv_time vsh_conv_time; /* Shunt Voltage Coversion Time */
+	enum ina231_config_mode mode; /* Operating mode */
 };
 
 /**@brief Open the INA231 driver.
@@ -248,7 +248,7 @@ int ina231_alert_limit_get(uint16_t *p_alert_limit);
  *
  * @return Conversion time in seconds
  */
-float conv_time_enum_to_sec(ina231_config_vbus_conv_time_t conv_time);
+float conv_time_enum_to_sec(enum ina231_config_vbus_conv_time conv_time);
 
 /**@brief Convert enum value of numbers of average to uint16_t
  *
@@ -256,6 +256,6 @@ float conv_time_enum_to_sec(ina231_config_vbus_conv_time_t conv_time);
  *
  * @return Number of readings to average over
  */
-uint16_t average_enum_to_int(ina231_config_avg_t average);
+uint16_t average_enum_to_int(enum ina231_config_avg average);
 
 #endif /* _INA231_H_ */

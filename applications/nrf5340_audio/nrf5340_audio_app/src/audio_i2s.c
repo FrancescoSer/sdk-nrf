@@ -59,13 +59,13 @@ LOG_MODULE_REGISTER(audio_i2s, CONFIG_LOG_I2S_LEVEL);
 
 #define HFCLKAUDIO_12_288_MHZ 0x9BAE
 
-typedef enum {
+enum audio_i2s_state {
 	AUDIO_I2S_STATE_UNINIT,
 	AUDIO_I2S_STATE_IDLE,
-	AUDIO_I2S_STATE_STARTED
-} audio_i2s_state_t;
+	AUDIO_I2S_STATE_STARTED,
+};
 
-static audio_i2s_state_t state = AUDIO_I2S_STATE_UNINIT;
+static enum audio_i2s_state state = AUDIO_I2S_STATE_UNINIT;
 
 static nrfx_i2s_config_t cfg = {
 	.sck_pin = DT_PROP(I2S_NL, sck_pin),

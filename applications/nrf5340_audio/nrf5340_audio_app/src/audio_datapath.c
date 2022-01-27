@@ -77,8 +77,8 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 
 /* Total sample FIFO period in microseconds */
 #define FIFO_SMPL_PERIOD_US 40000
-#define FIFO_NUM_BLKS	    NUM_BLKS(FIFO_SMPL_PERIOD_US)
-#define MAX_FIFO_SIZE	    (FIFO_NUM_BLKS * BLK_SIZE_SAMPLES(CONFIG_AUDIO_SAMPLE_RATE_HZ) * 2)
+#define FIFO_NUM_BLKS NUM_BLKS(FIFO_SMPL_PERIOD_US)
+#define MAX_FIFO_SIZE (FIFO_NUM_BLKS * BLK_SIZE_SAMPLES(CONFIG_AUDIO_SAMPLE_RATE_HZ) * 2)
 
 /* Number of audio blocks given a duration */
 #define NUM_BLKS(d) ((d) / BLK_PERIOD_US)
@@ -89,7 +89,7 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 /* Decrement sample FIFO index by one block */
 #define PREV_IDX(i) (((i) > 0) ? ((i)-1) : (FIFO_NUM_BLKS - 1))
 
-#define NUM_BLKS_IN_FRAME     NUM_BLKS(FRAME_DURATION_US)
+#define NUM_BLKS_IN_FRAME NUM_BLKS(FRAME_DURATION_US)
 #define NUM_SAMPS_IN_BLK_MONO BLK_SIZE_SAMPLES(CONFIG_AUDIO_SAMPLE_RATE_HZ)
 /* Number of octets in a single audio block */
 #define BLK_MONO_SIZE_OCTETS (NUM_SAMPS_IN_BLK_MONO * sizeof(int16_t))
@@ -100,27 +100,27 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 
 /* Audio clock - nRF5340 Analog Phase-Locked Loop (APLL) */
 #define APLL_FREQ_CENTER 39854
-#define APLL_FREQ_MIN	 36834
-#define APLL_FREQ_MAX	 42874
+#define APLL_FREQ_MIN 36834
+#define APLL_FREQ_MAX 42874
 /* Use nanoseconds to reduce rounding errors */
 #define APLL_FREQ_ADJ(t) (-((t)*1000) / 331)
 
-#define DRIFT_COMP		true
-#define DRIFT_MEAS_PERIOD_US	100000
-#define DRIFT_ERR_THRESH_LOCK	16
+#define DRIFT_COMP true
+#define DRIFT_MEAS_PERIOD_US 100000
+#define DRIFT_ERR_THRESH_LOCK 16
 #define DRIFT_ERR_THRESH_UNLOCK 32
 
 #define PRES_COMP_ENABLE true
 /* Presentation delay in microseconds */
-#define PRES_DLY_US		10000
+#define PRES_DLY_US 10000
 #define PRES_ERR_THRESH_LOCK_US 1000
 
-typedef enum {
+enum drift_comp_state {
 	DRFT_STATE_INIT, /* Wireless data path initialization - Initialize drift compensation */
 	DRFT_STATE_CALIB, /* Calibrate and zero out local delay */
 	DRFT_STATE_OFFSET, /* Adjust I2S offset relative to SDU Reference */
 	DRFT_STATE_LOCKED /* Drift compensation locked - Minor corrections */
-} drift_comp_state_t;
+};
 
 static const char *const drift_comp_state_names[] = {
 	"INIT",
@@ -129,12 +129,12 @@ static const char *const drift_comp_state_names[] = {
 	"LOCKED",
 };
 
-typedef enum {
+enum pres_comp_state {
 	PRES_STATE_INIT, /* Wireless data path initialization - Initialize presentation compensation */
 	PRES_STATE_MEAS, /* Measure presentation delay */
 	PRES_STATE_WAIT, /* Wait for some time */
 	PRES_STATE_LOCKED /* Presentation compensation locked */
-} pres_comp_state_t;
+};
 
 static const char *const pres_comp_state_names[] = {
 	"INIT",
@@ -175,14 +175,14 @@ static struct {
 	} local;
 
 	struct {
-		drift_comp_state_t state : 8;
+		enum drift_comp_state state : 8;
 		uint16_t ctr; /* Counter for collected data points */
 		uint32_t meas_start_time_us;
 		uint32_t center_freq;
 	} drift_adj;
 
 	struct {
-		pres_comp_state_t state : 8;
+		enum pres_comp_state state : 8;
 		uint16_t ctr; /* Counter for collected data points (counter also used in waiting state) */
 		int32_t err_dly_us;
 		int32_t sum_err_dly_us;
@@ -200,7 +200,7 @@ static void hfclkaudio_set(uint16_t freq_value)
 #endif /* (DRIFT_COMP) */
 }
 
-static void drift_comp_state_set(drift_comp_state_t new_state)
+static void drift_comp_state_set(enum drift_comp_state new_state)
 {
 	if (new_state == ctrl_blk.drift_adj.state) {
 		return;
@@ -302,7 +302,7 @@ static void audio_datapath_drift_compensation(void)
 	}
 }
 
-static void pres_comp_state_set(pres_comp_state_t new_state)
+static void pres_comp_state_set(enum pres_comp_state new_state)
 {
 	int ret;
 

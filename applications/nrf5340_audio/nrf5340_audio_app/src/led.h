@@ -9,14 +9,14 @@
 
 #include <stdint.h>
 
-#define RED   0
+#define RED 0
 #define GREEN 1
-#define BLUE  2
+#define BLUE 2
 
 #define GRN GREEN
 #define BLU BLUE
 
-typedef enum {
+enum led_color {
 	LED_COLOR_OFF, /* 000 */
 	LED_COLOR_RED, /* 001 */
 	LED_COLOR_GREEN, /* 010 */
@@ -26,7 +26,7 @@ typedef enum {
 	LED_COLOR_CYAN, /* 110 */
 	LED_COLOR_WHITE, /* 111 */
 	LED_COLOR_NUM,
-} led_color_t;
+};
 
 #define LED_ON LED_COLOR_WHITE
 
@@ -40,7 +40,7 @@ typedef enum {
  *
  * @param led_unit	Selected LED unit. Defines are located in board.h
  * @note		If the given LED unit is an RGB LED, color must be
- *			provided as a single vararg. See led_color_t.
+ *			provided as a single vararg. See led_color.
  *			For monochrome LEDs, the vararg will be ignored.
  * @return		0 on success
  *			-ENXIO if the given led unit is assigned to another core
@@ -57,7 +57,7 @@ int led_blink(uint8_t led_unit, ...);
  *
  * @param led_unit	Selected LED unit. Defines are located in board.h
  * @note		If the given LED unit is an RGB LED, color must be
- *			provided as a single vararg. See led_color_t.
+ *			provided as a single vararg. See led_color.
  *			For monochrome LEDs, the vararg will be ignored.
  * @return		0 on success
  *			-ENXIO if the given led unit is assigned to another core

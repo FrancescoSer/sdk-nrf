@@ -20,33 +20,34 @@
 #include <logging/log.h>
 LOG_MODULE_DECLARE(ble, CONFIG_LOG_BLE_LEVEL);
 
-static iso_trans_type_t iso_trans_type;
-static iso_direction_t iso_dir;
+static enum iso_transport iso_trans_type;
+static enum iso_direction iso_dir;
 
 #define BLE_ISO_PAYLOAD_SIZE_MAX ENC_MAX_FRAME_SIZE
 
-#define BLE_ISO_MTU		 (BT_ISO_CHAN_SEND_RESERVE + BLE_ISO_PAYLOAD_SIZE_MAX)
+#define BLE_ISO_MTU (BT_ISO_CHAN_SEND_RESERVE + BLE_ISO_PAYLOAD_SIZE_MAX)
 #define BLE_ISO_CONN_INTERVAL_US (BLE_ISO_CONN_INTERVAL * 1250)
-#define BLE_ISO_LATENCY_MS	 10
-#define BLE_ISO_RETRANSMITS	 2
+#define BLE_ISO_LATENCY_MS 10
+#define BLE_ISO_RETRANSMITS 2
 
-#define CIS_ISO_CHAN_COUNT	 CONFIG_BT_ISO_MAX_CHAN
-#define BIS_ISO_CHAN_COUNT	 1
+#define CIS_ISO_CHAN_COUNT CONFIG_BT_ISO_MAX_CHAN
+#define BIS_ISO_CHAN_COUNT 1
 #define BLE_ISO_BIG_SYNC_TIMEOUT 50
 
 #define CIS_CONN_RETRY_TIMES 5
 #define HCI_ISO_BUF_ALLOC_PER_CHAN 2
 
-#define NET_BUF_POOL_ITERATE(i, semicolon)\
-	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,\
-				  BT_ISO_SDU_BUF_SIZE(CONFIG_BT_ISO_TX_MTU), 8, NULL)semicolon
+#define NET_BUF_POOL_ITERATE(i, semicolon)                                                         \
+	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,                     \
+				  BT_ISO_SDU_BUF_SIZE(CONFIG_BT_ISO_TX_MTU), 8, NULL)              \
+	semicolon
 UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_ITERATE, ;)
 
 struct net_buf_pool *iso_tx_pools[CONFIG_BT_ISO_MAX_CHAN];
 
-#define NET_BUF_POOL_PTR_ITERATE(i, _)\
-	{\
-		iso_tx_pools[i] = &iso_tx_pool_##i;\
+#define NET_BUF_POOL_PTR_ITERATE(i, _)                                                             \
+	{                                                                                          \
+		iso_tx_pools[i] = &iso_tx_pool_##i;                                                \
 	}
 
 static struct bt_iso_chan iso_chan[CONFIG_BT_ISO_MAX_CHAN];
@@ -69,17 +70,17 @@ static K_SEM_DEFINE(sem_big_sync, 0, 1);
 
 static struct k_work_delayable iso_cis_conn_work;
 
-#define BT_LE_SCAN_CUSTOM \
-	BT_LE_SCAN_PARAM(BT_LE_SCAN_TYPE_PASSIVE, BT_LE_SCAN_OPT_NONE, BT_GAP_SCAN_FAST_INTERVAL, \
+#define BT_LE_SCAN_CUSTOM                                                                          \
+	BT_LE_SCAN_PARAM(BT_LE_SCAN_TYPE_PASSIVE, BT_LE_SCAN_OPT_NONE, BT_GAP_SCAN_FAST_INTERVAL,  \
 			 BT_GAP_SCAN_FAST_WINDOW)
 
-#define BT_LE_PER_ADV_CUSTOM \
-	BT_LE_PER_ADV_PARAM(BT_GAP_ADV_FAST_INT_MIN_2, BT_GAP_ADV_FAST_INT_MAX_2, \
+#define BT_LE_PER_ADV_CUSTOM                                                                       \
+	BT_LE_PER_ADV_PARAM(BT_GAP_ADV_FAST_INT_MIN_2, BT_GAP_ADV_FAST_INT_MAX_2,                  \
 			    BT_LE_PER_ADV_OPT_NONE)
 
 /* Interval * 1.25 to get ms */
 #define BT_INTERVAL_TO_MS(interval) ((interval)*5 / 4)
-#define PA_RETRY_COUNT		    6
+#define PA_RETRY_COUNT 6
 
 static bool per_adv_found;
 static bt_addr_le_t per_addr;
@@ -119,7 +120,7 @@ static uint8_t iso_chan_to_idx(struct bt_iso_chan *chan)
 
 K_TIMER_DEFINE(iso_rx_stats_timer, iso_rx_stats_handler, NULL);
 
-static int ble_event_send(ble_evt_type_t ble_evt)
+static int ble_event_send(enum ble_evt_type ble_evt)
 {
 	struct event_t event;
 
@@ -578,7 +579,7 @@ static int iso_bis_tx_stop(void)
 	return 0;
 }
 
-static int iso_bis_start(iso_direction_t dir)
+static int iso_bis_start(enum iso_direction dir)
 {
 	switch (dir) {
 	case DIR_RX:
@@ -741,7 +742,7 @@ int ble_trans_iso_lost_notify_enable(void)
 	return ble_hci_vsc_set_op_flag(BLE_HCI_VSC_OP_ISO_LOST_NOTIFY, 1);
 }
 
-int ble_trans_iso_tx(uint8_t const *const data, size_t size, ble_trans_chan_type_t chan_type)
+int ble_trans_iso_tx(uint8_t const *const data, size_t size, enum ble_trans_chan_type chan_type)
 {
 	int ret = 0;
 
@@ -852,7 +853,7 @@ int ble_trans_iso_bis_rx_sync_get(void)
 	return iso_bis_rx_sync_get();
 }
 
-int ble_trans_iso_init(iso_trans_type_t trans_type, iso_direction_t dir,
+int ble_trans_iso_init(enum iso_transport trans_type, enum iso_direction dir,
 		       ble_trans_iso_rx_cb_t rx_cb)
 {
 	int ret;

@@ -25,10 +25,10 @@
  *
  * These are the sources that can post activity events to the queue.
  */
-typedef enum {
+enum event_src {
 	EVT_SRC_BUTTON,
 	EVT_SRC_PEER,
-} event_source_t;
+};
 
 /** @brief Events for activity from event sources
  *
@@ -37,11 +37,11 @@ typedef enum {
  * posting to the event queue.
  */
 struct event_t {
-	event_source_t event_source;
+	enum event_src event_source;
 
 	union {
 		struct button_evt button_activity;
-		ble_evt_type_t link_activity;
+		enum ble_evt_type link_activity;
 	};
 };
 

@@ -19,38 +19,38 @@
 #define BLE_ISO_CONN_INTERVAL 8
 #endif /* (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3) */
 
-typedef enum {
+enum ble_trans_chan_type {
 	BLE_TRANS_CHANNEL_RETURN_MONO = 0,
 	BLE_TRANS_CHANNEL_LEFT = 0,
 	BLE_TRANS_CHANNEL_RIGHT,
 	BLE_TRANS_CHANNEL_STEREO,
 	BLE_TRANS_CHANNEL_NUM,
-} ble_trans_chan_type_t;
+};
 
-typedef enum {
+enum iso_transport {
 	TRANS_TYPE_NOT_SET, //< Default transport type. Not in use.
 	TRANS_TYPE_BIS, //< Broadcast isochronous stream.
 	TRANS_TYPE_CIS, //< Connected isochronous stream.
 	TRANS_TYPE_NUM, //< Number of transport types.
-} iso_trans_type_t;
+};
 
-typedef enum {
+enum iso_direction {
 	DIR_NOT_SET,
 	DIR_RX,
 	DIR_TX,
 	DIR_BIDIR,
 	DIR_NUM,
-} iso_direction_t;
+};
 
 /**@brief  BLE events
  */
-typedef enum {
+enum ble_evt_type {
 	BLE_EVT_CONNECTED,
 	BLE_EVT_DISCONNECTED,
 	BLE_EVT_LINK_READY,
 	BLE_EVT_STREAMING,
 	BLE_EVT_NUM_EVTS
-} ble_evt_type_t;
+};
 
 /**@brief	BLE data callback type.
  *
@@ -76,7 +76,7 @@ int ble_trans_iso_lost_notify_enable(void);
  *
  * @return	0 for success, error otherwise.
  */
-int ble_trans_iso_tx(uint8_t const *const data, size_t size, ble_trans_chan_type_t chan_type);
+int ble_trans_iso_tx(uint8_t const *const data, size_t size, enum ble_trans_chan_type chan_type);
 
 /**@brief	Start iso stream
  *
@@ -120,7 +120,7 @@ int ble_trans_iso_cis_connect(struct bt_conn *conn);
  * @return	0 for success, error otherwise
  */
 
-int ble_trans_iso_init(iso_trans_type_t trans_type, iso_direction_t dir,
+int ble_trans_iso_init(enum iso_transport trans_type, enum iso_direction dir,
 		       ble_trans_iso_rx_cb_t rx_cb);
 
 #endif /* _BLE_TRANS_H_ */

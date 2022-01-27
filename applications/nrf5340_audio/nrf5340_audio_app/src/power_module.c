@@ -311,7 +311,7 @@ static void power_module_thread(void *dummy1, void *dummy2, void *dummy3)
 	}
 }
 
-void power_module_data_get(ina_name_t name, struct power_module_data *data)
+void power_module_data_get(enum ina_name name, struct power_module_data *data)
 {
 	memcpy(data, &ina231[name].meas_data, sizeof(struct power_module_data));
 	ina231_data_ready_mask &= ~(1U << name);
@@ -385,7 +385,7 @@ int power_module_conv_time_set(uint8_t conv_time)
 	return 0;
 }
 
-int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t data_handler)
+int power_module_measurement_start(enum ina_name name, nrf_power_module_handler_t data_handler)
 {
 	int ret;
 
@@ -419,9 +419,10 @@ int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t d
 					   average_enum_to_int(configured_avg) * 1.1);
 
 	/* Config correct INA */
-	ina231[name].config.avg = (ina231_config_avg_t)configured_avg;
-	ina231[name].config.vbus_conv_time = (ina231_config_vbus_conv_time_t)configured_conv_time;
-	ina231[name].config.vsh_conv_time = (ina231_config_vsh_conv_time_t)configured_conv_time;
+	ina231[name].config.avg = (enum ina231_config_avg)configured_avg;
+	ina231[name].config.vbus_conv_time =
+		(enum ina231_config_vbus_conv_time)configured_conv_time;
+	ina231[name].config.vsh_conv_time = (enum ina231_config_vsh_conv_time)configured_conv_time;
 	ina231[name].config.mode = INA231_CONFIG_MODE_SHUNT_BUS_CONT;
 
 	ret = ina231_config_set(&ina231[name].config);
@@ -435,7 +436,7 @@ int power_module_measurement_start(ina_name_t name, nrf_power_module_handler_t d
 	return 0;
 }
 
-int power_module_measurement_stop(ina_name_t name)
+int power_module_measurement_stop(enum ina_name name)
 {
 	int ret;
 
@@ -498,7 +499,7 @@ int power_module_init(void)
 		ret = ina231_close(&ina231_twi_cfg);
 		RET_IF_ERR(ret);
 
-		ret = power_module_measurement_stop((ina_name_t)i);
+		ret = power_module_measurement_stop((enum ina_name)i);
 		RET_IF_ERR(ret);
 	}
 

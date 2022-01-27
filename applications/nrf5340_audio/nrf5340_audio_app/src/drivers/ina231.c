@@ -19,7 +19,7 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(ina231);
 
-#define RESET_TIME_MS		   1
+#define RESET_TIME_MS 1
 #define INA231_DEFAULT_CFG_REG_VAL (0x4127)
 
 static const struct device *i2c_dev;
@@ -164,18 +164,18 @@ int ina231_config_get(struct ina231_config_reg *config)
 	ret = reg_read(REG_INA231_CONFIGURATION, &config_reg);
 	RET_IF_ERR(ret);
 
-	config->avg = (ina231_config_avg_t)((config_reg & INA231_CONFIG_AVG_Msk) >>
-					    INA231_CONFIG_AVG_Pos);
+	config->avg = (enum ina231_config_avg)((config_reg & INA231_CONFIG_AVG_Msk) >>
+					       INA231_CONFIG_AVG_Pos);
 
-	config->vbus_conv_time =
-		(ina231_config_vbus_conv_time_t)((config_reg & INA231_CONFIG_VBUS_CONV_TIME_Msk) >>
-						 INA231_CONFIG_VBUS_CONV_TIME_Pos);
+	config->vbus_conv_time = (enum ina231_config_vbus_conv_time)(
+		(config_reg & INA231_CONFIG_VBUS_CONV_TIME_Msk) >>
+		INA231_CONFIG_VBUS_CONV_TIME_Pos);
 
-	config->vsh_conv_time = (ina231_config_vsh_conv_time_t)(
+	config->vsh_conv_time = (enum ina231_config_vsh_conv_time)(
 		(config_reg & INA231_CONFIG_VSH_CONV_TIME_Msk) >> INA231_CONFIG_VSH_CONV_TIME_Pos);
 
-	config->mode = (ina231_config_mode_t)((config_reg & INA231_CONFIG_MODE_Msk) >>
-					      INA231_CONFIG_MODE_Pos);
+	config->mode = (enum ina231_config_mode)((config_reg & INA231_CONFIG_MODE_Msk) >>
+						 INA231_CONFIG_MODE_Pos);
 
 	return 0;
 }
@@ -230,7 +230,7 @@ int ina231_alert_limit_get(uint16_t *p_alert_limit)
 	return reg_read(REG_INA231_MASK_ENABLE, p_alert_limit);
 }
 
-float conv_time_enum_to_sec(ina231_config_vbus_conv_time_t conv_time)
+float conv_time_enum_to_sec(enum ina231_config_vbus_conv_time conv_time)
 {
 	switch (conv_time) {
 	case INA231_CONFIG_VBUS_CONV_TIME_140_US:
@@ -258,7 +258,7 @@ float conv_time_enum_to_sec(ina231_config_vbus_conv_time_t conv_time)
 	return 0;
 }
 
-uint16_t average_enum_to_int(ina231_config_avg_t average)
+uint16_t average_enum_to_int(enum ina231_config_avg average)
 {
 	switch (average) {
 	case INA231_CONFIG_AVG_1:

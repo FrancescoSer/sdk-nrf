@@ -36,14 +36,14 @@
 LOG_MODULE_REGISTER(streamctrl, CONFIG_LOG_STREAMCTRL_LEVEL);
 
 /* State machine states for peer/stream */
-typedef enum {
+enum stream_state {
 	STATE_CONNECTING,
 	STATE_CONNECTED,
 	STATE_LINK_READY,
 	STATE_STREAMING,
 	STATE_PAUSED,
-	STATE_DISCONNECTED
-} stream_state_t;
+	STATE_DISCONNECTED,
+};
 
 struct ble_iso_data {
 	uint8_t data[CONFIG_BT_ISO_RX_MTU];
@@ -58,7 +58,7 @@ static struct k_thread audio_datapath_thread_data;
 static k_tid_t audio_datapath_thread_id;
 K_THREAD_STACK_DEFINE(audio_datapath_thread_stack, CONFIG_AUDIO_DATAPATH_STACK_SIZE);
 
-static stream_state_t m_stream_state;
+static enum stream_state m_stream_state;
 
 #if (CONFIG_BLE_ISO_TEST_PATTERN)
 
@@ -213,7 +213,7 @@ static void audio_datapath_thread(void *dummy1, void *dummy2, void *dummy3)
 }
 
 /* Function for handling all stream state changes */
-static void stream_state_set(stream_state_t stream_state_new)
+static void stream_state_set(enum stream_state stream_state_new)
 {
 	m_stream_state = stream_state_new;
 }
@@ -534,7 +534,7 @@ static void m_button_evt_handler(struct button_evt event)
 }
 
 /* Handle data transport/stream events */
-static void m_ble_transport_evt_handler(ble_evt_type_t event)
+static void m_ble_transport_evt_handler(enum ble_evt_type event)
 {
 	int ret;
 

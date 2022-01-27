@@ -87,7 +87,7 @@ int ble_hci_vsc_set_op_flag(uint32_t flag_bit, uint8_t setting)
 	return ret;
 }
 
-int ble_hci_vsc_set_adv_tx_pwr(ble_hci_vs_tx_power_t tx_power)
+int ble_hci_vsc_set_adv_tx_pwr(enum ble_hci_vs_tx_power tx_power)
 {
 	int ret;
 	struct ble_hci_vs_cp_set_adv_tx_pwr *cp;
@@ -118,7 +118,7 @@ int ble_hci_vsc_set_adv_tx_pwr(ble_hci_vs_tx_power_t tx_power)
 	return ret;
 }
 
-int ble_hci_vsc_set_conn_tx_pwr(uint16_t conn_handle, ble_hci_vs_tx_power_t tx_power)
+int ble_hci_vsc_set_conn_tx_pwr(uint16_t conn_handle, enum ble_hci_vs_tx_power tx_power)
 {
 	int ret;
 	struct ble_hci_vs_cp_set_conn_tx_pwr *cp;
@@ -150,8 +150,8 @@ int ble_hci_vsc_set_conn_tx_pwr(uint16_t conn_handle, ble_hci_vs_tx_power_t tx_p
 	return ret;
 }
 
-int ble_hci_vsc_map_led_pin(ble_hci_vs_led_function_id_t id, ble_hci_vs_led_function_mode_t mode,
-			    uint16_t pin)
+int ble_hci_vsc_map_led_pin(enum ble_hci_vs_led_function_id id,
+			    enum ble_hci_vs_led_function_mode mode, uint16_t pin)
 {
 	int ret;
 	struct ble_hci_vs_cp_set_led_pin_map *cp;

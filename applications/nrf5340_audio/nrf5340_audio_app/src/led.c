@@ -45,15 +45,15 @@ const char *led_gpio_labels[] = { DT_FOREACH_CHILD(DT_PATH(leds), GPIO_LABEL_AND
 
 const int led_gpio_flags[] = { DT_FOREACH_CHILD(DT_PATH(leds), GPIO_FLAGS_AND_COMMMA) };
 
-typedef enum {
+enum led_core_assigned {
 	LED_CORE_APP,
 	LED_CORE_NET,
-} led_core_assigned_t;
+};
 
-typedef enum {
+enum led_type {
 	LED_MONOCHROME,
 	LED_COLOR,
-} led_type_t;
+};
 
 struct pin_dev {
 	int pin;
@@ -63,13 +63,13 @@ struct pin_dev {
 
 struct user_config {
 	bool blink;
-	led_color_t color;
+	enum led_color color;
 };
 
 struct led_unit_cfg {
 	uint8_t led_no;
-	led_core_assigned_t core;
-	led_type_t unit_type;
+	enum led_core_assigned core;
+	enum led_type unit_type;
 	union {
 		struct pin_dev mono;
 		struct pin_dev color[NUM_COLORS_RGB];
@@ -242,7 +242,7 @@ static int led_off_int(struct pin_dev const *const pin_dev)
 /**
  * @brief Internal handling to set the status of a led unit
  */
-static int led_set_int(uint8_t led_unit, led_color_t color)
+static int led_set_int(uint8_t led_unit, enum led_color color)
 {
 	int ret;
 
@@ -324,7 +324,7 @@ static void led_blink_work_handler(struct k_work *work)
 	on_phase = !on_phase;
 }
 
-int led_set(uint8_t led_unit, led_color_t color, bool blink)
+int led_set(uint8_t led_unit, enum led_color color, bool blink)
 {
 	int ret;
 

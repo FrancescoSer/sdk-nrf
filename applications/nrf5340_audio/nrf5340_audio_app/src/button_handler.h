@@ -30,13 +30,16 @@ typedef uint32_t button_pin_t;
 
 /** Button actions
  */
-typedef enum { BUTTON_PRESS } button_action_t;
+enum button_action {
+	BUTTON_PRESS,
+	BUTTON_ACTION_NUM,
+};
 
 /** Button event
  */
 struct button_evt {
 	button_pin_t button_pin;
-	button_action_t button_action;
+	enum button_action button_action;
 };
 
 struct btn_config {
