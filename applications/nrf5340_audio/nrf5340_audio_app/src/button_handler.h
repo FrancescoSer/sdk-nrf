@@ -48,7 +48,7 @@ struct btn_config {
 	uint32_t btn_cfg_mask;
 };
 
-/** @brief Initialize button handler, with buttons defined in @ref BUTTONS_LIST.
+/** @brief Initialize button handler, with buttons defined in button_assignments.h.
  *
  * @note This function may only be called once - there is no reinitialize.
  *

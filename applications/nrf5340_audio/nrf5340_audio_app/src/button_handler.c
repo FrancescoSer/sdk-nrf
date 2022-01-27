@@ -23,20 +23,37 @@ LOG_MODULE_REGISTER(button_handler, CONFIG_LOG_BUTTON_HANDLER_LEVEL);
 
 /* How many buttons does the module support. Increase at memory cost */
 #define BUTTONS_MAX 5
-#define BASE_10	    10
+#define BASE_10 10
 
 static bool debounce_is_ongoing;
 static struct gpio_callback btn_callback[BUTTONS_MAX];
 
 const static struct btn_config btn_cfg[] = {
-#define X(_name, _dts_alias) \
-	{ \
-		.btn_name = STRINGIFY(_name), \
-		.btn_pin = DT_GPIO_PIN(DT_ALIAS(_dts_alias), gpios), \
-		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(_dts_alias), gpios), \
+	{
+		.btn_name = STRINGIFY(BUTTON_VOLUME_DOWN),
+		.btn_pin = BUTTON_VOLUME_DOWN,
+		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios),
 	},
-	BUTTONS_LIST
-#undef X
+	{
+		.btn_name = STRINGIFY(BUTTON_VOLUME_UP),
+		.btn_pin = BUTTON_VOLUME_UP,
+		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(sw1), gpios),
+	},
+	{
+		.btn_name = STRINGIFY(BUTTON_PLAY_PAUSE),
+		.btn_pin = BUTTON_PLAY_PAUSE,
+		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(sw2), gpios),
+	},
+	{
+		.btn_name = STRINGIFY(BUTTON_TEST_TONE),
+		.btn_pin = BUTTON_TEST_TONE,
+		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(sw3), gpios),
+	},
+	{
+		.btn_name = STRINGIFY(BUTTON_MUTE),
+		.btn_pin = BUTTON_MUTE,
+		.btn_cfg_mask = DT_GPIO_FLAGS(DT_ALIAS(sw4), gpios),
+	}
 };
 
 static const struct device *gpio_53_dev;
