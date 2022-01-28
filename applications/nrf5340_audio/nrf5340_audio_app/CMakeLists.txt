@@ -52,78 +52,57 @@ execute_process(COMMAND
 string(TIMESTAMP NRF5340_AUDIO_CORE_APP_COMP_DATE "%a %b %d %H:%M:%S %Y")
 
 # Generate fw_info_app.c
-configure_file("${NRF5340_AUDIO_SRC}/fw_info_app.c.in" "${CMAKE_BINARY_DIR}/fw_info_app.c" @ONLY)
+configure_file("${NRF5340_AUDIO_SRC}/utils/fw_info_app.c.in"
+               "${CMAKE_BINARY_DIR}/fw_info_app.c"
+               @ONLY)
 
 # Target sources below are specific to the nRF5340 Audio DK HW
 
 message("== Compiling for BOARD = ${BOARD} ==")
 
 target_sources(app PRIVATE
-    ${NRF5340_AUDIO_SRC}/main.c
-    ${NRF5340_AUDIO_SRC}/error_handler.c
+    src/main.c
     ${CMAKE_BINARY_DIR}/fw_info_app.c
-    ${NRF5340_AUDIO_SRC}/led.c
-    ${NRF5340_AUDIO_SRC}/pcm_stream_channel_modifier.c
-    ${NRF5340_AUDIO_SRC}/sw_codec_select.c
-    ${NRF5340_AUDIO_SRC}/audio_codec.c
-    ${NRF5340_AUDIO_SRC}/data_fifo.c
-    ${NRF5340_AUDIO_SRC}/drivers/ina231.c
-    ${NRF5340_AUDIO_SRC}/drivers/max14690.c
-    ${NRF5340_AUDIO_SRC}/ctrl_events.c
-    ${NRF5340_AUDIO_SRC}/button_handler.c
-    ${NRF5340_AUDIO_SRC}/power_module.c
-    ${NRF5340_AUDIO_SRC}/streamctrl.c
-    ${NRF5340_AUDIO_SRC}/audio_usb.c
-    ${NRF5340_AUDIO_SRC}/audio_i2s.c
-    ${NRF5340_AUDIO_SRC}/pmic.c
-    ${NRF5340_AUDIO_SRC}/cs47l63_comm.c
-    ${NRF5340_AUDIO_SRC}/hw_codec.c
-    ${NRF5340_AUDIO_SRC}/sd_card.c
-    ${NRF5340_AUDIO_SRC}/audio_datapath.c
-    ${NRF5340_AUDIO_SRC}/audio_sync_timer.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_core.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_trans.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_audio_services.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_acl_common.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_acl_gateway.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_acl_headset.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_hci_vsc.c
-    ${NRF5340_AUDIO_SRC}/subsys/bluetooth/ble_audio_services.c
-    ${NRF5340_AUDIO_SRC}/board_version.c
-    ${NRF5340_AUDIO_SRC}/uicr.c
-    ${NRF5340_AUDIO_SRC}/channel_assignment.c
-    ${NRF5340_AUDIO_SRC}/tone.c
-    ${NRF5340_AUDIO_SRC}/contin_array.c
     )
 
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC})
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC}/subsys/bluetooth)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_SRC}/drivers)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_REPO_ROOT}/../../boards/arm/nrf5340_audio_dk_nrf5340)
+# Include application events and configuration headers
+zephyr_library_include_directories(
+    src/audio
+    src/bluetooth
+    src/drivers
+    src/events
+    src/modules
+    src/utils
+    )
 
-# Codecs
-if (CONFIG_SW_CODEC_LC3 AND CONFIG_SW_CODEC_SBC)
-    message(FATAL_ERROR "Only one codec can be selected in the current implementation, not able to compile for SBC and LC3 at same time")
-endif()
+zephyr_library_include_directories(app PRIVATE
+        ${NRF5340_AUDIO_REPO_ROOT}/../../boards/arm/nrf5340_audio_dk_nrf5340)
 
-# Bluedroid SBC
+# Application sources
+add_subdirectory(src/audio)
+add_subdirectory(src/bluetooth)
+add_subdirectory(src/drivers)
+add_subdirectory(src/events)
+add_subdirectory(src/modules)
+add_subdirectory(src/utils)
+
+## Bluedroid SBC
 if (CONFIG_SW_CODEC_SBC)
     include(${EXT_ROOT}/bluedroid/CMakelists.txt)
 endif()
 
-# LC3
+## LC3
 if (CONFIG_SW_CODEC_LC3)
     if (EXISTS ${LC3_ROOT}/CMakeLists.txt)
         include(${LC3_ROOT}/CMakeLists.txt)
     else()
-        message(FATAL_ERROR "LC3 repository not found - Do 'west config manifest.group-filter +nrf5340_audio' and then 'west update'. If access is denied, contact local Nordic Semiconductor support or use SBC codec")
+        message(FATAL_ERROR "LC3 repository not found\n"
+                "Do 'west config manifest.group-filter +nrf5340_audio' "
+                "and then 'west update'.\n"
+                "If access is denied, contact local Nordic Semiconductor "
+                "support or use SBC codec")
     endif()
 endif()
 
-# Cirrus HW codec resources
+## Cirrus HW codec resources
 include(${CIRRUS_ROOT}/CMakeLists.txt)
-
-# SD card
-if (CONFIG_DISK_ACCESS_SDHC)
-    target_sources(app PRIVATE ${NRF5340_AUDIO_SRC}/sd_card.c)
-endif()

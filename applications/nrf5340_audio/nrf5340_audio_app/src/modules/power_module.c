@@ -17,7 +17,7 @@
 #include <soc.h>
 #include <debug/stack.h>
 
-#include "drivers/ina231.h"
+#include "ina231.h"
 #include "macros_common.h"
 #include "board.h"
 
