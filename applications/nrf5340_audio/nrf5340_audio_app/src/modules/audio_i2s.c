@@ -100,11 +100,12 @@ static nrfx_i2s_config_t cfg = {
 
 static i2s_blk_comp_callback_t i2s_blk_comp_callback;
 
-static void i2s_comp_handler(nrfx_i2s_buffers_t const *rel_buf, uint32_t status)
+static void i2s_comp_handler(nrfx_i2s_buffers_t const *released_bufs, uint32_t status)
 {
-	if ((status == NRFX_I2S_STATUS_NEXT_BUFFERS_NEEDED) && rel_buf && i2s_blk_comp_callback &&
-	    (rel_buf->p_rx_buffer || rel_buf->p_tx_buffer)) {
-		i2s_blk_comp_callback(audio_sync_timer_i2s_tx_ts_get(), rel_buf->p_rx_buffer);
+	if ((status == NRFX_I2S_STATUS_NEXT_BUFFERS_NEEDED) && released_bufs &&
+	    i2s_blk_comp_callback && (released_bufs->p_rx_buffer || released_bufs->p_tx_buffer)) {
+		i2s_blk_comp_callback(audio_sync_timer_i2s_tx_ts_get(), released_bufs->p_rx_buffer,
+				      released_bufs->p_tx_buffer);
 	}
 }
 

@@ -39,8 +39,8 @@ static k_tid_t encoder_thread_id;
 
 static struct sw_codec_config sw_codec_cfg;
 /* Buffer which can hold max 1 period test tone at 1000 Hz */
-int16_t test_tone_buf[CONFIG_AUDIO_SAMPLE_RATE_HZ / 1000];
-size_t test_tone_size;
+static int16_t test_tone_buf[CONFIG_AUDIO_SAMPLE_RATE_HZ / 1000];
+static size_t test_tone_size;
 static bool audio_codec_started;
 
 static void encoder_thread(void *arg1, void *arg2, void *arg3)
@@ -88,7 +88,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 				ERR_CHK(ret);
 
 				ret = pscm_copy_pad(tmp, FRAME_SIZE_BYTES / 2,
-						    CONFIG_AUDIO_CONTAINER_BITS, pcm_raw_data,
+						    CONFIG_AUDIO_BIT_DEPTH_BITS, pcm_raw_data,
 						    &num_bytes);
 				ERR_CHK(ret);
 			}

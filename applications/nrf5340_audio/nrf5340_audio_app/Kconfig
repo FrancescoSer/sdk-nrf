@@ -25,9 +25,11 @@ choice NRF5340_AUDIO_TRANSPORT_MODE
 	default TRANSPORT_CIS
 
 config TRANSPORT_BIS
+	select EXPERIMENTAL
 	bool "Use BIS ISO channel for audio streaming"
 
 config TRANSPORT_CIS
+	select EXPERIMENTAL
 	bool "Use CIS ISO channel for audio streaming"
 
 endchoice
@@ -62,7 +64,7 @@ config AUDIO_BIT_DEPTH_32
 	bool "32 bit audio"
 endchoice
 
-config AUDIO_CONTAINER_BITS
+config AUDIO_BIT_DEPTH_BITS
 	int "Data storage bit depth"
 	range 16 32
 	default 16 if AUDIO_BIT_DEPTH_16
@@ -71,6 +73,16 @@ config AUDIO_CONTAINER_BITS
 	help
 		Bit depth of one sample in storage. Note that 24 bit depth
 		requires 32 bit for storage
+
+config AUDIO_BIT_DEPTH_OCTETS
+	int "Data storage bit depth in octets"
+	range 2 4
+	default 2 if AUDIO_BIT_DEPTH_16
+	default 4 if AUDIO_BIT_DEPTH_24
+	default 4 if AUDIO_BIT_DEPTH_32
+	help
+		Bit depth of one sample in storage given in octets.
+		Note that 24 bit depth requires 4 octets for storage
 
 choice AUDIO_SOURCE_GATEWAY
 	prompt "Audio source for gateway"

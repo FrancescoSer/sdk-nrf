@@ -339,7 +339,6 @@ static void m_button_evt_handler(struct button_evt event)
 				}
 
 				LOG_DBG("Starting headset device");
-				audio_headset_start();
 				stream_state_set(STATE_STREAMING);
 				ret = led_blink(LED_APP_1_BLUE);
 				ERR_CHK(ret);
@@ -353,7 +352,6 @@ static void m_button_evt_handler(struct button_evt event)
 					break;
 				}
 
-				audio_headset_start();
 #if (CONFIG_TRANSPORT_CIS)
 				ret = ble_vcs_volume_unmute();
 				if (ret) {
@@ -371,7 +369,6 @@ static void m_button_evt_handler(struct button_evt event)
 				ret = led_on(LED_APP_1_BLUE);
 				ERR_CHK(ret);
 				ble_trans_iso_stop();
-				audio_stop();
 				break;
 
 			default:
@@ -503,7 +500,7 @@ static void m_button_evt_handler(struct button_evt event)
 	case BUTTON_TEST_TONE:
 		switch (m_stream_state) {
 		case STATE_STREAMING:
-			if (CONFIG_AUDIO_CONTAINER_BITS != 16) {
+			if (CONFIG_AUDIO_BIT_DEPTH_BITS != 16) {
 				LOG_WRN("Tone gen only supports 16 bits");
 				break;
 			}
@@ -576,7 +573,6 @@ static void m_ble_transport_evt_handler(enum ble_evt_type event)
 
 		case STATE_STREAMING:
 #if (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET)
-			audio_stop();
 			LOG_INF("Trying to reconnect");
 			ret = ble_trans_iso_start();
 			if (ret) {
@@ -631,7 +627,6 @@ static void m_ble_transport_evt_handler(enum ble_evt_type event)
 
 		case STATE_STREAMING:
 #if (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET)
-			audio_headset_start();
 			ret = led_blink(LED_APP_1_BLUE);
 			ERR_CHK(ret);
 #endif /* (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET) */
@@ -660,7 +655,6 @@ static void m_ble_transport_evt_handler(enum ble_evt_type event)
 		switch (m_stream_state) {
 		case STATE_LINK_READY:
 #if (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET)
-			audio_headset_start();
 			stream_state_set(STATE_STREAMING);
 			ret = led_blink(LED_APP_1_BLUE);
 			ERR_CHK(ret);
@@ -714,6 +708,10 @@ int streamctrl_start(void)
 
 	ret = data_fifo_init(&ble_fifo_rx);
 	ERR_CHK_MSG(ret, "Failed to set up ble_rx FIFO");
+
+#if (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET)
+	audio_headset_start();
+#endif
 
 	audio_datapath_thread_id =
 		k_thread_create(&audio_datapath_thread_data, audio_datapath_thread_stack,

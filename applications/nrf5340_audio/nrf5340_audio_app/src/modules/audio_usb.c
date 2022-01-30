@@ -16,8 +16,8 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(audio_usb, CONFIG_LOG_AUDIO_USB_LEVEL);
 
-#define USB_FRAME_SIZE_STEREO \
-	(((CONFIG_AUDIO_SAMPLE_RATE_HZ * CONFIG_AUDIO_CONTAINER_BITS) / (8 * 1000)) * 2)
+#define USB_FRAME_SIZE_STEREO                                                                      \
+	(((CONFIG_AUDIO_SAMPLE_RATE_HZ * CONFIG_AUDIO_BIT_DEPTH_OCTETS) / 1000) * 2)
 
 static struct data_fifo *fifo_tx;
 static struct data_fifo *fifo_rx;

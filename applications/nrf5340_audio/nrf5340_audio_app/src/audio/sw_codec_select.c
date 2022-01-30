@@ -78,7 +78,7 @@ int sw_codec_encode(void *pcm_data, size_t pcm_size, uint8_t **encoded_data, siz
 		/* Since LC3 is a single channel codec, we must split the
 		 * stereo PCM stream
 		 */
-		ret = pscm_two_channel_split(pcm_data, pcm_size, CONFIG_AUDIO_CONTAINER_BITS,
+		ret = pscm_two_channel_split(pcm_data, pcm_size, CONFIG_AUDIO_BIT_DEPTH_BITS,
 					     pcm_data_mono[AUDIO_CH_L], pcm_data_mono[AUDIO_CH_R],
 					     &pcm_block_size_mono);
 		RET_IF_ERR(ret);
@@ -123,7 +123,7 @@ int sw_codec_encode(void *pcm_data, size_t pcm_size, uint8_t **encoded_data, siz
 #if (CONFIG_SW_CODEC_SBC)
 		static uint8_t pcm_data_prev_frame[AUDIO_CH_NUM][PCM_NUM_BYTES_SBC_FRAME_MONO];
 
-		ret = pscm_two_channel_split(pcm_data, pcm_size, CONFIG_AUDIO_CONTAINER_BITS,
+		ret = pscm_two_channel_split(pcm_data, pcm_size, CONFIG_AUDIO_BIT_DEPTH_BITS,
 					     pcm_data_mono[AUDIO_CH_L], pcm_data_mono[AUDIO_CH_R],
 					     &pcm_block_size_mono);
 		RET_IF_ERR(ret);
@@ -239,7 +239,7 @@ int sw_codec_decode(uint8_t const *const encoded_data, size_t encoded_size, bool
 			 * other channel
 			 */
 			ret = pscm_zero_pad(pcm_data_mono, pcm_size_session,
-					    m_config.decoder.audio_ch, CONFIG_AUDIO_CONTAINER_BITS,
+					    m_config.decoder.audio_ch, CONFIG_AUDIO_BIT_DEPTH_BITS,
 					    pcm_data_stereo, &pcm_size_stereo);
 			RET_IF_ERR(ret);
 			break;
@@ -259,7 +259,7 @@ int sw_codec_decode(uint8_t const *const encoded_data, size_t encoded_size, bool
 						   (uint16_t *)&pcm_size_session, bad_frame);
 			RET_IF_ERR(ret);
 			ret = pscm_combine(pcm_data_mono, pcm_data_mono_right, pcm_size_session,
-					   CONFIG_AUDIO_CONTAINER_BITS, pcm_data_stereo,
+					   CONFIG_AUDIO_BIT_DEPTH_BITS, pcm_data_stereo,
 					   &pcm_size_stereo);
 			RET_IF_ERR(ret);
 			break;
@@ -302,7 +302,7 @@ int sw_codec_decode(uint8_t const *const encoded_data, size_t encoded_size, bool
 			if (decoded_pcm_offset == PCM_NUM_BYTES_MONO) {
 				ret = pscm_zero_pad(pcm_data_mono, PCM_NUM_BYTES_MONO,
 						    m_config.decoder.audio_ch,
-						    CONFIG_AUDIO_CONTAINER_BITS, pcm_data_stereo,
+						    CONFIG_AUDIO_BIT_DEPTH_BITS, pcm_data_stereo,
 						    &pcm_size_stereo);
 				RET_IF_ERR(ret);
 				*decoded_size = pcm_size_stereo;
@@ -405,7 +405,7 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 			uint16_t pcm_bytes_req_enc;
 
 			ret = sw_codec_lc3_enc_init(CONFIG_AUDIO_SAMPLE_RATE_HZ,
-						    CONFIG_AUDIO_CONTAINER_BITS, framesize_us,
+						    CONFIG_AUDIO_BIT_DEPTH_BITS, framesize_us,
 						    sw_codec_cfg.encoder.bitrate,
 						    sw_codec_cfg.encoder.channel_mode,
 						    &pcm_bytes_req_enc);
@@ -418,7 +418,7 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 				return -EALREADY;
 			}
 			ret = sw_codec_lc3_dec_init(CONFIG_AUDIO_SAMPLE_RATE_HZ,
-						    CONFIG_AUDIO_CONTAINER_BITS, framesize_us,
+						    CONFIG_AUDIO_BIT_DEPTH_BITS, framesize_us,
 						    sw_codec_cfg.decoder.channel_mode);
 			RET_IF_ERR(ret);
 		}

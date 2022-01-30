@@ -217,10 +217,13 @@ void main(void)
 		(void)k_sleep(K_MSEC(100));
 	}
 
+	ret = leds_set();
+	ERR_CHK(ret);
+
 	ret = streamctrl_start();
 	ERR_CHK(ret);
 
-	ret = leds_set();
+	ret = audio_datapath_tone_play(1000, 400, 1);
 	ERR_CHK(ret);
 
 	while (1) {

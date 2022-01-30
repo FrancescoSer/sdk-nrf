@@ -46,6 +46,10 @@
 
 #include <zephyr.h>
 #include <nrfx_clock.h>
+#include <shell/shell.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
 
 #include "macros_common.h"
 #include "board.h"
@@ -53,6 +57,9 @@
 #include "audio_i2s.h"
 #include "sw_codec_select.h"
 #include "audio_sync_timer.h"
+#include "tone.h"
+#include "contin_array.h"
+#include "pcm_mix.h"
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
@@ -90,9 +97,10 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 #define PREV_IDX(i) (((i) > 0) ? ((i)-1) : (FIFO_NUM_BLKS - 1))
 
 #define NUM_BLKS_IN_FRAME NUM_BLKS(FRAME_DURATION_US)
-#define NUM_SAMPS_IN_BLK_MONO BLK_SIZE_SAMPLES(CONFIG_AUDIO_SAMPLE_RATE_HZ)
+#define BLK_MONO_NUM_SAMPS BLK_SIZE_SAMPLES(CONFIG_AUDIO_SAMPLE_RATE_HZ)
 /* Number of octets in a single audio block */
-#define BLK_MONO_SIZE_OCTETS (NUM_SAMPS_IN_BLK_MONO * sizeof(int16_t))
+#define BLK_MONO_SIZE_OCTETS (BLK_MONO_NUM_SAMPS * CONFIG_AUDIO_BIT_DEPTH_OCTETS)
+#define BLK_STEREO_SIZE_OCTETS (BLK_MONO_SIZE_OCTETS * 2)
 /* How much data to be collected before moving on with drift compensation */
 #define LOCAL_NUM_DATA_PTS (DRIFT_MEAS_PERIOD_US / BLK_PERIOD_US)
 /* How much data to be collected before moving on with presentation compensation */
@@ -114,6 +122,9 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 /* Presentation delay in microseconds */
 #define PRES_DLY_US 10000
 #define PRES_ERR_THRESH_LOCK_US 1000
+
+/* How often to print underrun warning */
+#define UNDERRUN_LOG_INTERVAL_BLKS 5000
 
 enum drift_comp_state {
 	DRFT_STATE_INIT, /* Wireless data path initialization - Initialize drift compensation */
@@ -188,6 +199,11 @@ static struct {
 		int32_t sum_err_dly_us;
 	} pres_adj;
 } ctrl_blk;
+
+static bool tone_active;
+/* Buffer which can hold max 1 period test tone at 100 Hz */
+static uint16_t test_tone_buf[CONFIG_AUDIO_SAMPLE_RATE_HZ / 100];
+static size_t test_tone_size;
 
 static void hfclkaudio_set(uint16_t freq_value)
 {
@@ -396,6 +412,113 @@ static int32_t audio_datapath_presentation_compensation(uint32_t exp_dly_us)
 	return pres_adj_us;
 }
 
+static void tone_stop_worker(struct k_work *work)
+{
+	tone_active = false;
+	memset(test_tone_buf, 0, sizeof(test_tone_buf));
+	LOG_INF("Tone stopped");
+}
+
+K_WORK_DEFINE(tone_stop_work, tone_stop_worker);
+
+static void tone_stop_timer_handler(struct k_timer *dummy)
+{
+	k_work_submit(&tone_stop_work);
+};
+
+K_TIMER_DEFINE(tone_stop_timer, tone_stop_timer_handler, NULL);
+
+int audio_datapath_tone_play(uint16_t freq, uint16_t dur_ms, float amplitude)
+{
+	int ret;
+
+	if (tone_active) {
+		return -EBUSY;
+	}
+
+	ret = tone_gen(test_tone_buf, &test_tone_size, freq, CONFIG_AUDIO_SAMPLE_RATE_HZ,
+		       amplitude);
+	RET_IF_ERR(ret);
+
+	/* If duration is 0, play forever */
+	if (dur_ms != 0) {
+		k_timer_start(&tone_stop_timer, K_MSEC(dur_ms), K_NO_WAIT);
+	}
+
+	tone_active = true;
+	LOG_INF("Tone started");
+	return 0;
+}
+
+void audio_datapath_tone_stop(void)
+{
+	k_timer_stop(&tone_stop_timer);
+	k_work_submit(&tone_stop_work);
+}
+
+static void tone_mix(uint8_t *tx_buf)
+{
+	int ret;
+	int8_t tone_buf_continous[BLK_MONO_SIZE_OCTETS];
+	static uint32_t finite_pos;
+
+	ret = contin_array_create(tone_buf_continous, BLK_MONO_SIZE_OCTETS, test_tone_buf,
+				  test_tone_size, &finite_pos);
+	ERR_CHK(ret);
+
+	ret = pcm_mix(tx_buf, BLK_STEREO_SIZE_OCTETS, tone_buf_continous, BLK_MONO_SIZE_OCTETS,
+		      B_MONO_INTO_A_STEREO_L);
+	ERR_CHK(ret);
+}
+
+/* Alternate-buffers used when there is no active audio stream.
+ * Used interchangably by I2S.
+ */
+static struct {
+	uint8_t __aligned(WB_UP(1)) buf_0[BLK_STEREO_SIZE_OCTETS];
+	uint8_t __aligned(WB_UP(1)) buf_1[BLK_STEREO_SIZE_OCTETS];
+	bool buf_0_in_use;
+	bool buf_1_in_use;
+} alt;
+
+/**@brief Get first available alternative-buffer
+ *
+ * @param p_buffer Double pointer to populate with buffer
+ *
+ * @retval 0 if success
+ * @retval -ENOMEM No available buffers
+ */
+static int alt_buffer_get(void **p_buffer)
+{
+	if (!alt.buf_0_in_use) {
+		alt.buf_0_in_use = true;
+		*p_buffer = alt.buf_0;
+	} else if (!alt.buf_1_in_use) {
+		alt.buf_1_in_use = true;
+		*p_buffer = alt.buf_1;
+	} else {
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+/**@brief Checks if pointer matches that of a buffer
+ *	  and frees it in one operation
+ *
+ * @param p_buffer Buffer to free
+ */
+static void alt_buffer_free(void const *const p_buffer)
+{
+	if (p_buffer == alt.buf_0) {
+		alt.buf_0_in_use = false;
+	} else if (p_buffer == alt.buf_1) {
+		alt.buf_1_in_use = false;
+	} else {
+		return;
+	}
+}
+
 /*
  * This handler function is called every time I2S needs new buffers for
  * TX and RX data.
@@ -406,15 +529,19 @@ static int32_t audio_datapath_presentation_compensation(uint32_t exp_dly_us)
  * New I2S RX data is located in rx_buf_released, and is locked into
  * the in.fifo message queue.
  */
-static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_released)
+static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_released,
+					    uint32_t const *tx_buf_released)
 {
+	int ret;
 	static bool underrun_condition;
 
-	/*** Presentation delay measurement ***/
+	alt_buffer_free(tx_buf_released);
 
+	/*** Presentation delay measurement ***/
 	ctrl_blk.out.meas_pres_dly_us = ts - ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx];
 
-	/*** TX ***/
+	/********** I2S TX **********/
+	static uint8_t *tx_buf;
 
 	/* Double buffered index */
 	uint32_t next_out_blk_idx = NEXT_IDX(ctrl_blk.out.cons_blk_idx);
@@ -427,29 +554,30 @@ static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_releas
 			LOG_WRN("Data received, total underruns: %d",
 				ctrl_blk.out.total_blk_underruns);
 		}
+
+		tx_buf = (uint8_t *)&ctrl_blk.out.fifo[next_out_blk_idx * BLK_MONO_SIZE_OCTETS];
+
 	} else {
-		/* Repeat audio block */
-		next_out_blk_idx = ctrl_blk.out.cons_blk_idx;
-		/* Don't print if we haven't started receiving data yet */
-		if (ctrl_blk.remote.last_ts != 0) {
-			if (!underrun_condition ||
-			    ((ctrl_blk.out.total_blk_underruns % 1000) == 0)) {
-				LOG_WRN("In I2S TX underrun condition, total: %d",
-					ctrl_blk.out.total_blk_underruns);
-			}
-			underrun_condition = true;
-			ctrl_blk.out.total_blk_underruns++;
+		/* No data available in out.fifo
+		 * use alternative buffers 
+		 */
+		ret = alt_buffer_get((void **)&tx_buf);
+		ERR_CHK(ret);
+
+		if (!underrun_condition ||
+		    ((ctrl_blk.out.total_blk_underruns % UNDERRUN_LOG_INTERVAL_BLKS) == 0)) {
+			LOG_WRN("In I2S TX underrun condition, total: %d",
+				ctrl_blk.out.total_blk_underruns);
 		}
+
+		memset(tx_buf, 0, BLK_STEREO_SIZE_OCTETS);
+		underrun_condition = true;
+		ctrl_blk.out.total_blk_underruns++;
 	}
 
-	uint8_t *tx_buf =
-		(uint8_t *)&ctrl_blk.out.fifo[next_out_blk_idx * NUM_SAMPS_IN_BLK_MONO * 2];
-
-	/*** RX ***/
-
-	int ret;
-	static int prev_ret;
+	/********** I2S RX **********/
 	uint32_t *rx_buf;
+	static int prev_ret;
 
 	/* Lock last filled buffer into message queue */
 	if (rx_buf_released != NULL) {
@@ -488,12 +616,14 @@ static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_releas
 
 	ERR_CHK_MSG(ret, "RX failed to get block");
 
-	/*** Data exchange ***/
+	if (tone_active) {
+		tone_mix(tx_buf);
+	}
 
+	/*** Data exchange ***/
 	audio_i2s_set_next_buf(tx_buf, rx_buf);
 
 	/*** Drift compensation ***/
-
 	ctrl_blk.local.last_ts = ts;
 	audio_datapath_drift_compensation();
 }
@@ -509,17 +639,15 @@ static void audio_datapath_i2s_start(void)
 	uint32_t *rx_buf_two;
 
 	/* TX */
-
 	ctrl_blk.out.cons_blk_idx = PREV_IDX(ctrl_blk.out.cons_blk_idx);
 	tx_buf_one =
-		(uint8_t *)&ctrl_blk.out.fifo[ctrl_blk.out.cons_blk_idx * NUM_SAMPS_IN_BLK_MONO * 2];
+		(uint8_t *)&ctrl_blk.out.fifo[ctrl_blk.out.cons_blk_idx * BLK_MONO_NUM_SAMPS * 2];
 
 	ctrl_blk.out.cons_blk_idx = PREV_IDX(ctrl_blk.out.cons_blk_idx);
 	tx_buf_two =
-		(uint8_t *)&ctrl_blk.out.fifo[ctrl_blk.out.cons_blk_idx * NUM_SAMPS_IN_BLK_MONO * 2];
+		(uint8_t *)&ctrl_blk.out.fifo[ctrl_blk.out.cons_blk_idx * BLK_MONO_NUM_SAMPS * 2];
 
 	/* RX */
-
 	uint32_t alloced_cnt;
 	uint32_t locked_cnt;
 
@@ -534,7 +662,6 @@ static void audio_datapath_i2s_start(void)
 	ERR_CHK_MSG(ret, "RX failed to get block");
 
 	/* Start I2S */
-
 	audio_i2s_start(tx_buf_one, rx_buf_one);
 	audio_i2s_set_next_buf(tx_buf_two, rx_buf_two);
 }
@@ -640,8 +767,8 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 			for (int i = 0; i < pres_adj_blks; i++) {
 				/* Mute audio frame */
 				memset(&ctrl_blk.out.fifo[ctrl_blk.out.prod_blk_idx *
-							  NUM_SAMPS_IN_BLK_MONO * 2],
-				       0, BLK_MONO_SIZE_OCTETS * 2);
+							  BLK_MONO_NUM_SAMPS * 2],
+				       0, BLK_STEREO_SIZE_OCTETS);
 
 				/* Record producer block start reference */
 				ctrl_blk.out.prod_blk_ts[ctrl_blk.out.prod_blk_idx] =
@@ -691,8 +818,8 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 		uint32_t out_blk_idx = ctrl_blk.out.prod_blk_idx;
 
 		for (uint32_t i = 0; i < NUM_BLKS_IN_FRAME; i++) {
-			memcpy(&ctrl_blk.out.fifo[out_blk_idx * NUM_SAMPS_IN_BLK_MONO * 2],
-			       &((int16_t *)ctrl_blk.decoded_data)[i * NUM_SAMPS_IN_BLK_MONO * 2],
+			memcpy(&ctrl_blk.out.fifo[out_blk_idx * BLK_MONO_NUM_SAMPS * 2],
+			       &((int16_t *)ctrl_blk.decoded_data)[i * BLK_MONO_NUM_SAMPS * 2],
 			       BLK_MONO_SIZE_OCTETS * 2);
 
 			/* Record producer block start reference */
@@ -756,3 +883,62 @@ int audio_datapath_init(void)
 
 	return 0;
 }
+
+static int cmd_i2s_tone_play(const struct shell *shell, size_t argc, const char **argv)
+{
+	int ret;
+	uint16_t freq;
+	uint16_t dur_ms;
+
+	if (argc != 3) {
+		shell_error(shell, "2 arguments (freq [Hz], dur [ms] must be provided");
+		return -EINVAL;
+	}
+
+	if (!isdigit((int)argv[1][0])) {
+		shell_error(shell, "Argument 1 is not numeric");
+		return -EINVAL;
+	}
+
+	if (!isdigit((int)argv[2][0])) {
+		shell_error(shell, "Argument 2 is not numeric");
+		return -EINVAL;
+	}
+
+	freq = strtoul(argv[1], NULL, 10);
+	dur_ms = strtoul(argv[2], NULL, 10);
+
+	shell_print(shell, "Setting tone %d Hz for %d ms", freq, dur_ms);
+	ret = audio_datapath_tone_play(freq, dur_ms, 1);
+	if (ret) {
+		shell_print(shell, "Tone failed with code %d", ret);
+		LOG_ERR("Tone failed with code %d", ret);
+	}
+
+	LOG_INF("Tone play: %d Hz for %d ms", freq, dur_ms);
+	shell_print(shell, "Tone play: %d Hz for %d ms", freq, dur_ms);
+
+	return ret;
+}
+
+static int cmd_i2s_tone_stop(const struct shell *shell, size_t argc, const char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	audio_datapath_tone_stop();
+
+	LOG_INF("Tone stop");
+	shell_print(shell, "Tone stop");
+
+	return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(test_cmd,
+			       SHELL_COND_CMD(CONFIG_SHELL, nrf_tone_start, NULL,
+					      "Start local tone from nRF5340.", cmd_i2s_tone_play),
+			       SHELL_COND_CMD(CONFIG_SHELL, nrf_tone_stop, NULL,
+					      "Stop local tone from nRF5340.", cmd_i2s_tone_stop),
+			       SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(test, &test_cmd, "Test mode commands", NULL);
