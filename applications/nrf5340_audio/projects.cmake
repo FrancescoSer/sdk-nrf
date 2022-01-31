@@ -12,7 +12,7 @@ if("x-$ENV{ZEPHYR_BASE}" STREQUAL "x-")
 endif("x-$ENV{ZEPHYR_BASE}" STREQUAL "x-")
 
 # Set the nRF5340 Audio version. x.x.99 indicates master branch/cutting edge
-set(NRF5340_AUDIO_RELEASE_VERSION 0.4.0)
+set(NRF5340_AUDIO_RELEASE_VERSION 0.4.99)
 
 # Set paths
 set(NRF5340_AUDIO_REPO_ROOT ${CMAKE_CURRENT_LIST_DIR} CACHE PATH "nRF5340 Audio root directory")
