@@ -17,14 +17,14 @@
  *
  * 0001 is used as the reg addr. In case of a fault, this reg is read only.
  */
-#define SPI_BUSY_WAIT	      0x0001
+#define SPI_BUSY_WAIT 0x0001
 #define SPI_BUSY_WAIT_US_1000 1000
 #define SPI_BUSY_WAIT_US_3000 3000
 
 #define MAX_VOLUME_REG_VAL 0x80
-#define MAX_VOLUME_DB	   64
+#define MAX_VOLUME_DB 64
 #define OUT_VOLUME_DEFAULT 0x62
-#define VOLUME_UPDATE_BIT  (1 << 9)
+#define VOLUME_UPDATE_BIT (1 << 9)
 
 #define CS47L63_SOFT_RESET_VAL 0x5A000000
 

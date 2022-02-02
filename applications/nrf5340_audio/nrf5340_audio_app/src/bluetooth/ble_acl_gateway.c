@@ -20,8 +20,8 @@ LOG_MODULE_DECLARE(ble, CONFIG_LOG_BLE_LEVEL);
 
 K_WORK_DEFINE(start_scan_work, work_scan_start);
 
-#define BT_LE_CONN_PARAM_MULTI \
-	BT_LE_CONN_PARAM(CONFIG_BLE_ACL_CONN_INTERVAL, CONFIG_BLE_ACL_CONN_INTERVAL, \
+#define BT_LE_CONN_PARAM_MULTI                                                                     \
+	BT_LE_CONN_PARAM(CONFIG_BLE_ACL_CONN_INTERVAL, CONFIG_BLE_ACL_CONN_INTERVAL,               \
 			 CONFIG_BLE_ACL_SLAVE_LATENCY, CONFIG_BLE_ACL_SUP_TIMEOUT)
 
 static struct bt_gatt_exchange_params exchange_params;

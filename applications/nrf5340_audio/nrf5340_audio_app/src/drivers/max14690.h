@@ -38,13 +38,13 @@ enum pmic_buck_cfg_en {
 
 /* Buck 1 voltage settings in millivolts */
 #define PMIC_BUCK_1_VOLTAGE_STEP_MV 25
-#define PMIC_BUCK_1_VOLTAGE_MIN_MV  800
-#define PMIC_BUCK_1_VOLTAGE_MAX_MV  1800
+#define PMIC_BUCK_1_VOLTAGE_MIN_MV 800
+#define PMIC_BUCK_1_VOLTAGE_MAX_MV 1800
 
 /* Buck 2 voltage settings in millivolts */
 #define PMIC_BUCK_2_VOLTAGE_STEP_MV 50
-#define PMIC_BUCK_2_VOLTAGE_MIN_MV  1500
-#define PMIC_BUCK_2_VOLTAGE_MAX_MV  3300
+#define PMIC_BUCK_2_VOLTAGE_MIN_MV 1500
+#define PMIC_BUCK_2_VOLTAGE_MAX_MV 3300
 
 #define PMIC_LDO_CFG_MODE_OFFS (0)
 enum pmic_ldo_cfg_mode {

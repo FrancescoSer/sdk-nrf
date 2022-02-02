@@ -18,8 +18,8 @@
 #include <logging/log.h>
 LOG_MODULE_DECLARE(ble, CONFIG_LOG_BLE_LEVEL);
 
-#define BT_LE_ADV_FAST_CONN \
-	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE, BT_GAP_ADV_FAST_INT_MIN_1, \
+#define BT_LE_ADV_FAST_CONN                                                                        \
+	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE, BT_GAP_ADV_FAST_INT_MIN_1,                      \
 			BT_GAP_ADV_FAST_INT_MAX_1, NULL)
 
 /* Advertising data for peer connection */

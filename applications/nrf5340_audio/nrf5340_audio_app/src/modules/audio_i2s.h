@@ -54,13 +54,12 @@
  */
 
 #if (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3)
-#define FRAME_SIZE_BYTES \
-	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 15 / 2) * CONFIG_I2S_CH_NUM * \
+#define FRAME_SIZE_BYTES                                                                           \
+	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 15 / 2) * CONFIG_I2S_CH_NUM *                           \
 	 CONFIG_AUDIO_BIT_DEPTH_OCTETS)
 #else
-#define FRAME_SIZE_BYTES \
-	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 10) * CONFIG_I2S_CH_NUM * \
-	 CONFIG_AUDIO_BIT_DEPTH_OCTETS)
+#define FRAME_SIZE_BYTES                                                                           \
+	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 10) * CONFIG_I2S_CH_NUM * CONFIG_AUDIO_BIT_DEPTH_OCTETS)
 #endif /* (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3) */
 
 #define BLOCK_SIZE_BYTES (FRAME_SIZE_BYTES / CONFIG_FIFO_FRAME_SPLIT_NUM)
@@ -69,7 +68,7 @@
  * Calculate the number of samples in a block, divided by the number of samples
  * that will fit within a 32-bit word
  */
-#define I2S_SAMPLES_NUM \
+#define I2S_SAMPLES_NUM                                                                            \
 	(BLOCK_SIZE_BYTES / (CONFIG_AUDIO_BIT_DEPTH_OCTETS) / (32 / CONFIG_AUDIO_BIT_DEPTH_BITS))
 
 /**
@@ -79,7 +78,8 @@
  * @param rx_buf_released Pointer to the released buffer containing received data
  * @param tx_buf_released Pointer to the released buffer that was used to sent data
  */
-typedef void (*i2s_blk_comp_callback_t)(uint32_t ts, uint32_t *rx_buf_released, uint32_t const *tx_buf_released);
+typedef void (*i2s_blk_comp_callback_t)(uint32_t ts, uint32_t *rx_buf_released,
+					uint32_t const *tx_buf_released);
 
 /**
  * @brief Supply the buffers to be used in the next part of the I2S transfer

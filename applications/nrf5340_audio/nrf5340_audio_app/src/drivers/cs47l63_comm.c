@@ -22,13 +22,13 @@
 LOG_MODULE_REGISTER(CS47L63, CONFIG_LOG_CS47L63_LEVEL);
 
 #define DEFAULT_DEVID 0x47A63
-#define BUS_TYPE_SPI  1
-#define PAD_LEN	      4 /* Four bytes padding after address */
+#define BUS_TYPE_SPI 1
+#define PAD_LEN 4 /* Four bytes padding after address */
 /* Delay the processing thread to allow interrupts to settle after boot */
 #define CS47L63_PROCESS_THREAD_DELAY_MS 10
 
-#define CS47L63_INT_PIN	  DT_GPIO_PIN(DT_NODELABEL(dsp_irq_in), gpios)
-#define CS47L63_GPIO_PIN  DT_GPIO_PIN(DT_NODELABEL(dsp_gpio_in), gpios)
+#define CS47L63_INT_PIN DT_GPIO_PIN(DT_NODELABEL(dsp_irq_in), gpios)
+#define CS47L63_GPIO_PIN DT_GPIO_PIN(DT_NODELABEL(dsp_gpio_in), gpios)
 #define CS47L63_RESET_PIN DT_GPIO_PIN(DT_NODELABEL(dsp_reset_out), gpios)
 
 const static struct device *cirrus_dev;
@@ -45,12 +45,12 @@ K_THREAD_STACK_DEFINE(cs47l63_stack, CONFIG_CS47L63_STACK_SIZE);
 K_SEM_DEFINE(sem_cs47l63, 0, 1);
 
 /* Free the CS pin and release the SPI device after a transaction */
-#define SPI_OPER_POST_FREE \
+#define SPI_OPER_POST_FREE                                                                         \
 	(SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_WORD_SET(8) | SPI_LINES_SINGLE)
 
 /* Hold the CS pin and do not release the SPI device after a transaction */
-#define SPI_OPER_POST_HOLD \
-	(SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_HOLD_ON_CS | SPI_LOCK_ON | SPI_WORD_SET(8) | \
+#define SPI_OPER_POST_HOLD                                                                         \
+	(SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_HOLD_ON_CS | SPI_LOCK_ON | SPI_WORD_SET(8) |  \
 	 SPI_LINES_SINGLE)
 
 #define SPI_FREQUENCY 8000000

@@ -14,7 +14,7 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(tone, CONFIG_LOG_AUDIO_CODEC_LEVEL);
 
-#define FREQ_LIMIT_LOW	100
+#define FREQ_LIMIT_LOW 100
 #define FREQ_LIMIT_HIGH 10000
 
 int tone_gen(int16_t *tone, size_t *tone_size, uint16_t tone_freq_hz, uint32_t smpl_freq_hz,

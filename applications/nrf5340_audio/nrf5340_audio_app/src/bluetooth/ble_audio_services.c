@@ -19,7 +19,7 @@
 LOG_MODULE_REGISTER(ble_audio_services);
 
 #define VOLUME_DEFAULT 195
-#define VOLUME_STEP    16
+#define VOLUME_STEP 16
 
 static struct bt_vcs *vcs;
 

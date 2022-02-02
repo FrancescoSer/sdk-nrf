@@ -18,11 +18,11 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(board_version, CONFIG_LOG_BOARD_VERSION_LEVEL);
 
-#define ADC_1ST_CHANNEL_ID  0
+#define ADC_1ST_CHANNEL_ID 0
 #define ADC_RESOLUTION_BITS 12
 /* We allow the ADC register value to deviate by N points in either direction */
-#define BOARD_VERSION_TOLERANCE	  70
-#define ADC_ACQ_TIME_US		  40
+#define BOARD_VERSION_TOLERANCE 70
+#define ADC_ACQ_TIME_US 40
 #define VOLTAGE_STABILIZE_TIME_US 5
 
 static int16_t sample_buffer;

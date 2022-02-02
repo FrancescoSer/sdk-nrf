@@ -146,10 +146,11 @@ static void audio_codec_start(void)
 	sw_codec_cfg.initialized = true;
 
 	if (sw_codec_cfg.encoder.enabled) {
-		encoder_thread_id = k_thread_create(
-			&encoder_thread_data, encoder_thread_stack, CONFIG_ENCODER_STACK_SIZE,
-			(k_thread_entry_t)encoder_thread, NULL, NULL, NULL,
-			K_PRIO_PREEMPT(CONFIG_ENCODER_THREAD_PRIO), 0, K_NO_WAIT);
+		encoder_thread_id =
+			k_thread_create(&encoder_thread_data, encoder_thread_stack,
+					CONFIG_ENCODER_STACK_SIZE, (k_thread_entry_t)encoder_thread,
+					NULL, NULL, NULL,
+					K_PRIO_PREEMPT(CONFIG_ENCODER_THREAD_PRIO), 0, K_NO_WAIT);
 		ret = k_thread_name_set(encoder_thread_id, "ENCODER");
 		ERR_CHK(ret);
 	}

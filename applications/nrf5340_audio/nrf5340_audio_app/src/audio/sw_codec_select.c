@@ -30,7 +30,7 @@ static OI_CODEC_SBC_DECODER_CONTEXT context;
 static SBC_ENC_PARAMS m_sbc_enc_params;
 static OI_CODEC_SBC_CODEC_DATA_STEREO sw_codec_sbc_dec_data;
 
-#define LAST_PCM_FRAME_START_IDX \
+#define LAST_PCM_FRAME_START_IDX                                                                   \
 	(PCM_NUM_BYTES_SBC_FRAME_MONO * (CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET - 1))
 
 /* Since SBC remembers the previous frame when encoding, we need to force it to

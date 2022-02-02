@@ -117,7 +117,7 @@ int pcm_mix(void *const pcm_a, size_t size_a, void const *const pcm_b, size_t si
 	case B_MONO_INTO_A_STEREO_L:
 		pcm_mix_b_mono_into_a_stereo_l(pcm_a, size_a, pcm_b, size_b);
 		if (size_b > (size_a / 2)) {
-            LOG_ERR("size a %d size b %d", size_a, size_b);
+			LOG_ERR("size a %d size b %d", size_a, size_b);
 			return -EPERM;
 		}
 		break;
