@@ -73,6 +73,7 @@ zephyr_library_include_directories(
     src/events
     src/modules
     src/utils
+    src/utils/macros
     )
 
 zephyr_library_include_directories(app PRIVATE

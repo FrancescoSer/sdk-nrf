@@ -559,7 +559,7 @@ static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_releas
 
 	} else {
 		/* No data available in out.fifo
-		 * use alternative buffers 
+		 * use alternative buffers
 		 */
 		ret = alt_buffer_get((void **)&tx_buf);
 		ERR_CHK(ret);

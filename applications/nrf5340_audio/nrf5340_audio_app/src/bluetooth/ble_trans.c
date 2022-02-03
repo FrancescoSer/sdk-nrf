@@ -37,19 +37,15 @@ static enum iso_direction iso_dir;
 #define CIS_CONN_RETRY_TIMES 5
 #define HCI_ISO_BUF_ALLOC_PER_CHAN 2
 
-#define NET_BUF_POOL_ITERATE(i, semicolon)                                                         \
+#define NET_BUF_POOL_ITERATE(i, _)                                                                 \
 	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,                     \
-				  BT_ISO_SDU_BUF_SIZE(CONFIG_BT_ISO_TX_MTU), 8, NULL)              \
-	semicolon
-UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_ITERATE, ;)
+				  BT_ISO_SDU_BUF_SIZE(CONFIG_BT_ISO_TX_MTU), 8, NULL);
+#define NET_BUF_POOL_PTR_ITERATE(i, _) &iso_tx_pool_##i,
 
-struct net_buf_pool *iso_tx_pools[CONFIG_BT_ISO_MAX_CHAN];
+UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_ITERATE)
 
-#define NET_BUF_POOL_PTR_ITERATE(i, _)                                                             \
-	{                                                                                          \
-		iso_tx_pools[i] = &iso_tx_pool_##i;                                                \
-	}
-
+static struct net_buf_pool *iso_tx_pools[] = { UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN,
+							    NET_BUF_POOL_PTR_ITERATE) };
 static struct bt_iso_chan iso_chan[CONFIG_BT_ISO_MAX_CHAN];
 static struct bt_iso_chan *iso_chan_p[CONFIG_BT_ISO_MAX_CHAN];
 static atomic_t iso_tx_pool_alloc[CONFIG_BT_ISO_MAX_CHAN];
@@ -867,8 +863,6 @@ int ble_trans_iso_init(enum iso_transport trans_type, enum iso_direction dir,
 	if (iso_trans_type != TRANS_TYPE_NOT_SET) {
 		return -EPERM;
 	}
-
-	UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_PTR_ITERATE);
 
 	for (int8_t i = 0; i < CONFIG_BT_ISO_MAX_CHAN; i++) {
 		iso_chan_p[i] = &iso_chan[i];

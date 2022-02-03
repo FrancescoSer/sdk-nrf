@@ -84,11 +84,11 @@ int audio_datapath_stop(void);
 
 /**
  * @brief Mixes a tone into the I2S TX stream
- * 
+ *
  * @param freq Tone frequency [Hz]
  * @param dur_ms Tone duration [ms]. 0 = forever
  * @param amplitude Tone amplitude [0, 1]
- * 
+ *
  * @return 0 if successful, error otherwise
  */
 int audio_datapath_tone_play(uint16_t freq, uint16_t dur_ms, float amplitude);
