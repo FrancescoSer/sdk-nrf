@@ -264,9 +264,9 @@ void audio_gateway_start(void)
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SBC_MONO_BITRATE;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_MONO_BITRATE;
 	}
 
 #if (CONFIG_TRANSPORT_CIS)
@@ -305,9 +305,9 @@ void audio_headset_start(void)
 	sw_codec_cfg.encoder.channel_mode = SW_CODEC_MONO;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_SBC)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_SBC_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_SBC_MONO_BITRATE;
 	} else if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_SW_CODEC_LC3_MONO_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_MONO_BITRATE;
 	}
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 

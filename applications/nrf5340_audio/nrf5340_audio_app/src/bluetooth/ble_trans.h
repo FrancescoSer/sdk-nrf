@@ -11,13 +11,13 @@
 #include <bluetooth/conn.h>
 
 /* Connection interval is calculated as x*1.25 */
-#if (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3)
+#if (CONFIG_AUDIO_FRAME_DURATION_7_5_MS && CONFIG_SW_CODEC_LC3)
 /* Connection interval of 7.5 ms */
 #define BLE_ISO_CONN_INTERVAL 6
 #else
 /* Connection interval of 10 ms */
 #define BLE_ISO_CONN_INTERVAL 8
-#endif /* (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3) */
+#endif /* (CONFIG_AUDIO_FRAME_DURATION_7_5_MS && CONFIG_SW_CODEC_LC3) */
 
 enum ble_trans_chan_type {
 	BLE_TRANS_CHANNEL_RETURN_MONO = 0,

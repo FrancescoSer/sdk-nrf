@@ -11,15 +11,13 @@
 
 #if (CONFIG_SW_CODEC_SBC)
 #include "sbc_encoder.h"
-#define SBC_ENC_MONO_FRAME_SIZE (CONFIG_SW_CODEC_SBC_MONO_BITRATE * SBC_FRAME_SIZE_MS / (8 * 1000))
+#define SBC_ENC_MONO_FRAME_SIZE (CONFIG_SBC_MONO_BITRATE * SBC_FRAME_SIZE_MS / (8 * 1000))
 #define PCM_NUM_BYTES_SBC_FRAME_MONO                                                               \
 	(CONFIG_AUDIO_SAMPLE_RATE_HZ * CONFIG_AUDIO_BIT_DEPTH_OCTETS * SBC_FRAME_SIZE_MS / 1000)
 
-#define SBC_PCM_NUM_BYTES_MONO                                                                     \
-	(PCM_NUM_BYTES_SBC_FRAME_MONO * CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET)
+#define SBC_PCM_NUM_BYTES_MONO (PCM_NUM_BYTES_SBC_FRAME_MONO * CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET)
 
-#define SBC_ENC_MAX_FRAME_SIZE                                                                     \
-	(SBC_ENC_MONO_FRAME_SIZE * CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET)
+#define SBC_ENC_MAX_FRAME_SIZE (SBC_ENC_MONO_FRAME_SIZE * CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET)
 
 #else
 #define SBC_ENC_MAX_FRAME_SIZE 0
@@ -28,8 +26,7 @@
 
 #if (CONFIG_SW_CODEC_LC3)
 #define LC3_MAX_FRAME_SIZE_MS 10
-#define LC3_ENC_MONO_FRAME_SIZE                                                                    \
-	(CONFIG_SW_CODEC_LC3_MONO_BITRATE * LC3_MAX_FRAME_SIZE_MS / (8 * 1000))
+#define LC3_ENC_MONO_FRAME_SIZE (CONFIG_LC3_MONO_BITRATE * LC3_MAX_FRAME_SIZE_MS / (8 * 1000))
 
 #define LC3_PCM_NUM_BYTES_MONO                                                                     \
 	(CONFIG_AUDIO_SAMPLE_RATE_HZ * CONFIG_AUDIO_BIT_DEPTH_OCTETS * LC3_MAX_FRAME_SIZE_MS / 1000)

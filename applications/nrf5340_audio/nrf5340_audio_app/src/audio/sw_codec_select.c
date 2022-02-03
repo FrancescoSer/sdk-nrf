@@ -31,14 +31,14 @@ static SBC_ENC_PARAMS m_sbc_enc_params;
 static OI_CODEC_SBC_CODEC_DATA_STEREO sw_codec_sbc_dec_data;
 
 #define LAST_PCM_FRAME_START_IDX                                                                   \
-	(PCM_NUM_BYTES_SBC_FRAME_MONO * (CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET - 1))
+	(PCM_NUM_BYTES_SBC_FRAME_MONO * (CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET - 1))
 
 /* Since SBC remembers the previous frame when encoding, we need to force it to
  * remember the 'correct' last frame when encoding mono twice
  */
 static void prev_frame_sbc_flush(char *pcm_data)
 {
-	uint8_t last_frame_enc[ENC_MAX_FRAME_SIZE / CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET];
+	uint8_t last_frame_enc[ENC_MAX_FRAME_SIZE / CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET];
 
 	/* Swap out last frame */
 	m_sbc_enc_params.ps16PcmBuffer = (int16_t *)pcm_data;
@@ -133,13 +133,12 @@ int sw_codec_encode(void *pcm_data, size_t pcm_size, uint8_t **encoded_data, siz
 			m_sbc_enc_params.ps16PcmBuffer =
 				(int16_t *)pcm_data_mono[m_config.encoder.audio_ch];
 			m_sbc_enc_params.pu8Packet = m_encoded_data;
-			m_sbc_enc_params.u8NumPacketToEncode =
-				CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET;
+			m_sbc_enc_params.u8NumPacketToEncode = CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET;
 
 			/* Encode PCM data to SBC */
 			SBC_Encoder(&m_sbc_enc_params);
 			*encoded_size = m_sbc_enc_params.u16PacketLength *
-					CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET;
+					CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET;
 			*encoded_data = m_encoded_data;
 			break;
 		}
@@ -156,29 +155,27 @@ int sw_codec_encode(void *pcm_data, size_t pcm_size, uint8_t **encoded_data, siz
 			/* Encode left channel */
 			m_sbc_enc_params.ps16PcmBuffer = (int16_t *)pcm_data_mono[AUDIO_CH_L];
 			m_sbc_enc_params.pu8Packet = m_encoded_data;
-			m_sbc_enc_params.u8NumPacketToEncode =
-				CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET;
+			m_sbc_enc_params.u8NumPacketToEncode = CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET;
 
 			/* Encode PCM data to SBC */
 			SBC_Encoder(&m_sbc_enc_params);
 
 			*encoded_size = m_sbc_enc_params.u16PacketLength *
-					CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET;
+					CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET;
 
 			prev_frame_sbc_flush(pcm_data_prev_frame[AUDIO_CH_R]);
 
 			/* Encode right channel */
 			m_sbc_enc_params.ps16PcmBuffer = (int16_t *)pcm_data_mono[AUDIO_CH_R];
 			m_sbc_enc_params.pu8Packet = &m_encoded_data[*encoded_size];
-			m_sbc_enc_params.u8NumPacketToEncode =
-				CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET;
+			m_sbc_enc_params.u8NumPacketToEncode = CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET;
 
 			/* Encode PCM data to SBC */
 			SBC_Encoder(&m_sbc_enc_params);
 
 			*encoded_data = m_encoded_data;
 			*encoded_size = m_sbc_enc_params.u16PacketLength *
-					CONFIG_SW_CODEC_SBC_NUM_FRAMES_PER_BLE_PACKET * 2;
+					CONFIG_SBC_NUM_FRAMES_PER_BLE_PACKET * 2;
 
 			/* Remember last frame */
 			memcpy(pcm_data_prev_frame[AUDIO_CH_L],
@@ -389,7 +386,7 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 #if (CONFIG_SW_CODEC_LC3)
 		int ret;
 
-		uint16_t framesize_us = CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE ? 7500 : 10000;
+		uint16_t framesize_us = CONFIG_AUDIO_FRAME_DURATION_7_5_MS ? 7500 : 10000;
 
 		if (m_config.sw_codec != SW_CODEC_LC3) {
 			/* Check if LC3 is already initialized */
@@ -429,20 +426,20 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 	}
 	case SW_CODEC_SBC: {
 #if (CONFIG_SW_CODEC_SBC)
-		m_sbc_enc_params.s16ChannelMode = CONFIG_SW_CODEC_SBC_CHANNEL_MODE_MONO;
+		m_sbc_enc_params.s16ChannelMode = CONFIG_SBC_CHANNEL_MODE_MONO;
 		/* u16Bitrate requires kHz */
-		m_sbc_enc_params.u16BitRate = CONFIG_SW_CODEC_SBC_MONO_BITRATE / 1000;
+		m_sbc_enc_params.u16BitRate = CONFIG_SBC_MONO_BITRATE / 1000;
 
 		uint8_t sbc_pcm_stride;
 
 		/* Since we encode mono+mono instead of stereo, numOfChannels will always be 1 */
 		m_sbc_enc_params.s16NumOfChannels = 1;
 		m_sbc_enc_params.s16SamplingFreq = SBC_sf48000;
-		m_sbc_enc_params.s16NumOfBlocks = CONFIG_SW_CODEC_SBC_NO_OF_BLOCKS;
-		m_sbc_enc_params.s16NumOfSubBands = CONFIG_SW_CODEC_SBC_NO_OF_SUBBANDS;
+		m_sbc_enc_params.s16NumOfBlocks = CONFIG_SBC_NO_OF_BLOCKS;
+		m_sbc_enc_params.s16NumOfSubBands = CONFIG_SBC_NO_OF_SUBBANDS;
 		/* BitPool will be set in the driver by bitrate */
 
-		m_sbc_enc_params.s16AllocationMethod = CONFIG_SW_CODEC_SBC_BIT_ALLOC_METHOD;
+		m_sbc_enc_params.s16AllocationMethod = CONFIG_SBC_BIT_ALLOC_METHOD;
 		m_sbc_enc_params.mSBCEnabled = 0;
 		sbc_first_frame_received = false;
 		SBC_Encoder_Init(&m_sbc_enc_params);

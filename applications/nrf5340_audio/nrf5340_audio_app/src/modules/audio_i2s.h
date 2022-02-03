@@ -53,14 +53,15 @@
  * be 10 or 7.5 ms. Since we can't have floats in a define we use 15/2 instead
  */
 
-#if (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3)
+#if (CONFIG_AUDIO_FRAME_DURATION_7_5_MS && CONFIG_SW_CODEC_LC3)
+
 #define FRAME_SIZE_BYTES                                                                           \
 	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 15 / 2) * CONFIG_I2S_CH_NUM *                           \
 	 CONFIG_AUDIO_BIT_DEPTH_OCTETS)
 #else
 #define FRAME_SIZE_BYTES                                                                           \
 	((CONFIG_I2S_LRCK_FREQ_HZ / 1000 * 10) * CONFIG_I2S_CH_NUM * CONFIG_AUDIO_BIT_DEPTH_OCTETS)
-#endif /* (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE && CONFIG_SW_CODEC_LC3) */
+#endif /* (CONFIG_AUDIO_FRAME_DURATION_7_5_MS && CONFIG_SW_CODEC_LC3) */
 
 #define BLOCK_SIZE_BYTES (FRAME_SIZE_BYTES / CONFIG_FIFO_FRAME_SPLIT_NUM)
 

@@ -72,11 +72,11 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
  *   - frame: encoded audio packet exchanged with connectivity
  */
 
-#if (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE)
+#if (CONFIG_AUDIO_FRAME_DURATION_7_5_MS)
 #define FRAME_DURATION_US 7500
 #else
 #define FRAME_DURATION_US 10000
-#endif /* (CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE) */
+#endif /* (CONFIG_AUDIO_FRAME_DURATION_7_5_MS) */
 
 #define TIMESTAMP_DELTA_MAX_ERR_US (int)(FRAME_DURATION_US * 0.001)
 
