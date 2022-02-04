@@ -889,9 +889,12 @@ static int cmd_i2s_tone_play(const struct shell *shell, size_t argc, const char 
 	int ret;
 	uint16_t freq;
 	uint16_t dur_ms;
+	float amplitude;
 
-	if (argc != 3) {
-		shell_error(shell, "2 arguments (freq [Hz], dur [ms] must be provided");
+	if (argc != 4) {
+		shell_error(
+			shell,
+			"3 arguments (freq [Hz], dur [ms], and amplitude [0-1.0] must be provided");
 		return -EINVAL;
 	}
 
@@ -907,16 +910,28 @@ static int cmd_i2s_tone_play(const struct shell *shell, size_t argc, const char 
 
 	freq = strtoul(argv[1], NULL, 10);
 	dur_ms = strtoul(argv[2], NULL, 10);
+	amplitude = strtof(argv[3], NULL);
 
-	shell_print(shell, "Setting tone %d Hz for %d ms", freq, dur_ms);
-	ret = audio_datapath_tone_play(freq, dur_ms, 1);
-	if (ret) {
-		shell_print(shell, "Tone failed with code %d", ret);
-		LOG_ERR("Tone failed with code %d", ret);
+	if (amplitude <= 0 || amplitude > 1) {
+		shell_error(shell, "Make sure amplitude is 0 < [float] >= 1");
+		return -EINVAL;
 	}
 
-	LOG_INF("Tone play: %d Hz for %d ms", freq, dur_ms);
-	shell_print(shell, "Tone play: %d Hz for %d ms", freq, dur_ms);
+	shell_print(shell, "Setting tone %d Hz for %d ms", freq, dur_ms);
+	ret = audio_datapath_tone_play(freq, dur_ms, amplitude);
+
+	if (ret == -EBUSY) {
+		/* Abort continuous running tone with new tone */
+		audio_datapath_tone_stop();
+		ret = audio_datapath_tone_play(freq, dur_ms, amplitude);
+	}
+
+	if (ret) {
+		shell_print(shell, "Tone failed with code %d", ret);
+	}
+
+	shell_print(shell, "Tone play: %d Hz for %d ms with amplitude %.02f", freq, dur_ms,
+		    amplitude);
 
 	return ret;
 }
@@ -928,7 +943,6 @@ static int cmd_i2s_tone_stop(const struct shell *shell, size_t argc, const char 
 
 	audio_datapath_tone_stop();
 
-	LOG_INF("Tone stop");
 	shell_print(shell, "Tone stop");
 
 	return 0;
