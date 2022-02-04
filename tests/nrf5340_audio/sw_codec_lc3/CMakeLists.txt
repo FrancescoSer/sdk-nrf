@@ -1,15 +1,22 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.20.0)
 
-include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
-include(../tests.cmake)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(NONE)
 
 add_compile_definitions(CONFIG_SW_CODEC_LC3_ENC_SAMPLE_RATE_48KHZ_SUPPORT=1)
 add_compile_definitions(CONFIG_SW_CODEC_LC3_DEC_SAMPLE_RATE_48KHZ_SUPPORT=1)
 add_compile_definitions(CONFIG_SW_CODEC_LC3_7_5_MS_FRAMESIZE=1)
 
-# LC3
-include(${LC3_ROOT}/CMakeLists.txt)
+FILE(GLOB app_sources src/*.c)
+target_sources(app PRIVATE ${app_sources})
 
-target_sources(app PRIVATE main.c)
-zephyr_library_include_directories(app PRIVATE ${NRF5340_AUDIO_INC})
+target_sources(app
+  PRIVATE
+  ${ZEPHYR_BASE}/../nrf/modules/lc3/nrf5340_audio/nrf5340_audio_app/src/utils/tone.c
+  )
+
+target_include_directories(app
+  PRIVATE
+  ${ZEPHYR_BASE}/../nrf/modules/lc3/include/
+  )
+
