@@ -41,7 +41,7 @@ static bool is_valid_bit_depth(uint8_t pcm_bit_depth)
 static bool is_valid_size(size_t size, uint8_t bytes_per_sample, uint8_t no_channels)
 {
 	if (size % (bytes_per_sample * no_channels) != 0) {
-		LOG_ERR("Size: %d is not dividable with number of bytes per sample x number of channels",
+		LOG_ERR("Size: %d is not dividable with number of bytes per sample x num channels",
 			size);
 		return false;
 	}

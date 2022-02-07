@@ -127,7 +127,7 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 #define UNDERRUN_LOG_INTERVAL_BLKS 5000
 
 enum drift_comp_state {
-	DRFT_STATE_INIT, /* Wireless data path initialization - Initialize drift compensation */
+	DRFT_STATE_INIT, /* Wireless data path init - Initialize drift compensation */
 	DRFT_STATE_CALIB, /* Calibrate and zero out local delay */
 	DRFT_STATE_OFFSET, /* Adjust I2S offset relative to SDU Reference */
 	DRFT_STATE_LOCKED /* Drift compensation locked - Minor corrections */
@@ -141,7 +141,7 @@ static const char *const drift_comp_state_names[] = {
 };
 
 enum pres_comp_state {
-	PRES_STATE_INIT, /* Wireless data path initialization - Initialize presentation compensation */
+	PRES_STATE_INIT, /* Wireless data path init - Initialize presentation compensation */
 	PRES_STATE_MEAS, /* Measure presentation delay */
 	PRES_STATE_WAIT, /* Wait for some time */
 	PRES_STATE_LOCKED /* Presentation compensation locked */
@@ -194,7 +194,7 @@ static struct {
 
 	struct {
 		enum pres_comp_state state : 8;
-		uint16_t ctr; /* Counter for collected data points (counter also used in waiting state) */
+		uint16_t ctr; /* Counter for collected data points (also used in waiting state) */
 		int32_t err_dly_us;
 		int32_t sum_err_dly_us;
 	} pres_adj;
@@ -379,7 +379,9 @@ static int32_t audio_datapath_presentation_compensation(uint32_t exp_dly_us)
 			break;
 		}
 
-		/* Advance state if presentation compensation result is within bounds otherwise restart measurement */
+		/* Advance state if presentation compensation result is within bounds,
+		 * otherwise restart measurement
+		 */
 		if ((ctrl_blk.pres_adj.err_dly_us < PRES_ERR_THRESH_LOCK_US) &&
 		    (ctrl_blk.pres_adj.err_dly_us > -PRES_ERR_THRESH_LOCK_US)) {
 			/* Drift compensation will always be in DRFT_STATE_LOCKED here */
@@ -459,14 +461,14 @@ void audio_datapath_tone_stop(void)
 static void tone_mix(uint8_t *tx_buf)
 {
 	int ret;
-	int8_t tone_buf_continous[BLK_MONO_SIZE_OCTETS];
+	int8_t tone_buf_continuous[BLK_MONO_SIZE_OCTETS];
 	static uint32_t finite_pos;
 
-	ret = contin_array_create(tone_buf_continous, BLK_MONO_SIZE_OCTETS, test_tone_buf,
+	ret = contin_array_create(tone_buf_continuous, BLK_MONO_SIZE_OCTETS, test_tone_buf,
 				  test_tone_size, &finite_pos);
 	ERR_CHK(ret);
 
-	ret = pcm_mix(tx_buf, BLK_STEREO_SIZE_OCTETS, tone_buf_continous, BLK_MONO_SIZE_OCTETS,
+	ret = pcm_mix(tx_buf, BLK_STEREO_SIZE_OCTETS, tone_buf_continuous, BLK_MONO_SIZE_OCTETS,
 		      B_MONO_INTO_A_STEREO_L);
 	ERR_CHK(ret);
 }
@@ -739,20 +741,20 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 			pres_adj_us += -(BLK_PERIOD_US / 2);
 		}
 
-		/* The number of adjustment blocks is 0 as long as |pres_adj_us| < BLK_PERIOD_US */
+		/* Number of adjustment blocks is 0 as long as |pres_adj_us| < BLK_PERIOD_US */
 		int32_t pres_adj_blks = pres_adj_us / BLK_PERIOD_US;
 
 		if (pres_adj_blks > (FIFO_NUM_BLKS / 2)) {
 			/* Limit adjustment */
 			pres_adj_blks = FIFO_NUM_BLKS / 2;
 
-			LOG_WRN("Requested presentation delay out of range: pres_adj_us=%d, total_frames=%u",
+			LOG_WRN("Req. pres. delay out of range: pres_adj_us=%d, total_frames=%u",
 				pres_adj_us, ctrl_blk.out.total_frames);
 		} else if (pres_adj_blks < -(FIFO_NUM_BLKS / 2)) {
 			/* Limit adjustment */
 			pres_adj_blks = -(FIFO_NUM_BLKS / 2);
 
-			LOG_WRN("Requested presentation delay out of range: pres_adj_us=%d, total_frames=%u",
+			LOG_WRN("Req. pres. delay out of range: pres_adj_us=%d, total_frames=%u",
 				pres_adj_us, ctrl_blk.out.total_frames);
 		}
 
@@ -760,7 +762,7 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 		pres_adj_blks += missing_blk;
 
 		if (pres_adj_blks > 0) {
-			LOG_DBG("Presentation delay inserted to output audio stream: pres_adj_blks=%d, total_frames=%u",
+			LOG_DBG("Presentation delay inserted: pres_adj_blks=%d, total_frames=%u",
 				pres_adj_blks, ctrl_blk.out.total_frames);
 
 			/* Increase presentation delay */
@@ -778,7 +780,7 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 				ctrl_blk.out.total_prod_blks++;
 			}
 		} else if (pres_adj_blks < 0) {
-			LOG_DBG("Presentation delay removed from output audio stream: pres_adj_blks=%d, total_frames=%u",
+			LOG_DBG("Presentation delay removed: pres_adj_blks=%d, total_frames=%u",
 				pres_adj_blks, ctrl_blk.out.total_frames);
 
 			/* Reduce presentation delay */

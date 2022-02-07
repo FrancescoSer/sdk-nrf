@@ -174,7 +174,7 @@ static int led_device_tree_parse(void)
 		uint32_t led_unit = strtoul(led_labels[i], &end_ptr, BASE_10);
 
 		if (led_labels[i] == end_ptr) {
-			LOG_ERR("No match for led unit. The dts leds section is likely not properly formatted");
+			LOG_ERR("No match for led unit. The dts is likely not properly formatted");
 			return -ENXIO;
 		}
 

@@ -64,7 +64,7 @@ const static struct device *i2c_dev;
 static int mask_calculate(uint8_t num_settings, uint8_t *mask)
 {
 	if ((num_settings & (num_settings - 1)) != 0) {
-		LOG_ERR("The parameter num_settings does not cover an entire area! Must be 1, 2, 4, ...");
+		LOG_ERR("num_settings does not cover an entire area! Must be 1, 2, 4, ...");
 		return -EINVAL;
 	}
 

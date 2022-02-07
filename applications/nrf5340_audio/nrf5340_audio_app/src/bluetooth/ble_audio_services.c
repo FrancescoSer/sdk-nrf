@@ -75,7 +75,9 @@ static void vcs_state_cb_handler(struct bt_vcs *vcs, int err, uint8_t volume, ui
 			LOG_INF("VCS state from remote device %d:", i);
 		} else {
 			ret = ble_vcs_client_remote_set(i);
-			/* If remote peer hasn't been connected before, just skip the operation for it */
+			/* If remote peer hasn't been connected before,
+			 * just skip the operation for it
+			 */
 			if (ret == -EINVAL) {
 				continue;
 			}

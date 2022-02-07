@@ -292,7 +292,9 @@ static void iso_disconnected_cb(struct bt_iso_chan *chan, uint8_t reason)
 				break;
 			}
 		}
-		/* If there's no ISO CIS channel connected, trigger BLE_EVT_DISCONNECTED for stopping encoding thread */
+		/* If there's no ISO CIS channel connected,
+		 * trigger BLE_EVT_DISCONNECTED for stopping encoding thread
+		 */
 		if (num_iso_cis_connected() == 0) {
 			ret = ble_event_send(BLE_EVT_DISCONNECTED);
 			ERR_CHK_MSG(ret, "Unable to put event BLE_EVT_DISCONNECTED in event queue");

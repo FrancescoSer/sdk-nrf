@@ -97,7 +97,9 @@ static void ble_test_pattern_receive(uint8_t const *const p_data, size_t data_si
 	if (p_data[0] == expected_packet_value) {
 		expected_packet_value++;
 	} else {
-		/* First packet will always be a mismatch if gateway hasn't been reset before connection */
+		/* First packet will always be a mismatch
+		 * if gateway hasn't been reset before connection
+		 */
 		if (stats_overall.iso_rx_packets_received != 1) {
 			stats_overall.iso_rx_packets_lost++;
 			LOG_WRN("Missing packet: value: %d, expected: %d", p_data[0],

@@ -88,7 +88,7 @@ static void pcm_mix_b_mono_into_a_stereo_r(void *const pcm_a, size_t size_a,
 }
 
 int pcm_mix(void *const pcm_a, size_t size_a, void const *const pcm_b, size_t size_b,
-	    pcm_mix_mode_t mix_mode)
+	    enum pcm_mix_mode mix_mode)
 {
 	if (pcm_a == NULL || size_a == 0) {
 		return -EINVAL;

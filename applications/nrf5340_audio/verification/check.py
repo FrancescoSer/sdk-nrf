@@ -5,21 +5,18 @@
 #
 
 """
-Script to do clang-format on all files in the minim5340 folder
+Temporary script to perform checks in the minim5340 application folder
 """
 
 import subprocess
-from subprocess import PIPE, Popen
 import glob
 import os
 import sys
 
 def clang_format_all_files_run():
     """ Pre-commit check running"""
-    print("=== Running checks on all files ===")
+    print("=== Running checks ===")
     NCS_BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
-    print(NCS_BASE)
-
     folders = [NCS_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/', NCS_BASE+'/tests/nrf5340_audio/**/']
     filetypes = ('*.c', '*.h')
     files = []
@@ -29,9 +26,9 @@ def clang_format_all_files_run():
         for filetype in filetypes:
             files.extend(glob.glob(folder+filetype, recursive=True))
 
-    if not files:
-        print("No files found")
-        sys.exit(-1)
+        if not files:
+            print("No files found")
+            sys.exit(-1)
 
     os.chdir(NCS_BASE)
 
@@ -48,7 +45,7 @@ def clang_format_all_files_run():
             sys.exit(-1)
         else:
             if po.returncode != 0:
-                print("FAIL Clang")
+                print("FAIL: Clang")
                 print(out.decode('utf-8'))
                 file_passed = False
 
@@ -62,7 +59,7 @@ def clang_format_all_files_run():
             sys.exit(-1)
         else:
             if po.returncode != 0:
-                print("FAIL Checkpatch")
+                print("FAIL: Checkpatch")
                 file_passed = False
 
         if not file_passed:
@@ -70,10 +67,27 @@ def clang_format_all_files_run():
 
         print("======================")
 
+
+    cmd = "$ZEPHYR_BASE/scripts/twister -v -T tests/ -t nrf5340_audio_unit_tests -p qemu_cortex_m3 -i"
+    twister_failed = True
+    try:
+        po = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        err, out = po.communicate()
+    except Exception as exep:
+        print(exep)
+        sys.exit(-1)
+    else:
+        print(out.decode('utf-8'))
+        if po.returncode != 0:
+            print("Failed Twister")
+        else:
+            twister_failed = False
+
     if files_failed:
         print("Check.py Fail. Number of files failed: " + str(len(files_failed)) + " of " + str(len(files)))
-        for file_f in files_failed:
-            print("FAILED: " + file_f)
+
+    if twister_failed:
+        print("Twister failed")
     else:
         print("===Check.py passed!=== " + str(len(files)) + " files checked")
 

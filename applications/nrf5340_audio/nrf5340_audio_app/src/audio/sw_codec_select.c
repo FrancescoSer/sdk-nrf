@@ -444,7 +444,9 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 		sbc_first_frame_received = false;
 		SBC_Encoder_Init(&m_sbc_enc_params);
 
-		/* Since only mono decode is supported when using SBC, pcm_stride will always be 1 */
+		/* Since only mono decode is supported when using SBC,
+		 * pcm_stride will always be 1
+		 */
 		sbc_pcm_stride = 1;
 
 		(void)OI_CODEC_SBC_DecoderReset(&context, sw_codec_sbc_dec_data.data,

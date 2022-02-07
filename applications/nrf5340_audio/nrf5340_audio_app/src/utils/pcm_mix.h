@@ -9,13 +9,13 @@
 
 #include <zephyr.h>
 
-typedef enum {
+enum pcm_mix_mode {
 	B_STEREO_INTO_A_STEREO,
 	B_MONO_INTO_A_MONO,
 	B_MONO_INTO_A_STEREO_LR,
 	B_MONO_INTO_A_STEREO_L,
 	B_MONO_INTO_A_STEREO_R,
-} pcm_mix_mode_t;
+};
 
 /**
  * @brief Mixes two buffers of PCM data.
@@ -29,7 +29,7 @@ typedef enum {
  * @param size_a        [in]    Size (bytes) of buffer A PCM data
  * @param pcm_b         [in]    Pointer to buffer B PCM data
  * @param size_b        [in]    Size (bytes) of buffer B PCM data
- * @param mix_mode      [in]    Mixing mode according to pcm_mix_mode_t
+ * @param mix_mode      [in]    Mixing mode according to pcm_mix_mode
  *
  * @return 0            Success. Result stored in pcm_a
  * @return -EINVAL      pcm_a is NULL or size_a = 0
@@ -38,6 +38,6 @@ typedef enum {
  * @return -ESRCH       Invalid mix_mode
  */
 int pcm_mix(void *const pcm_a, size_t size_a, void const *const pcm_b, size_t size_b,
-	    pcm_mix_mode_t mix_mode);
+	    enum pcm_mix_mode mix_mode);
 
 #endif /* _PCM_MIX_H_ */

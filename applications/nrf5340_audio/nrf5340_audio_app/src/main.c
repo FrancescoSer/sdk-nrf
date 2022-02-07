@@ -138,7 +138,7 @@ static int channel_assign_check(void)
 	if (pressed) {
 		return channel_assignment_set(AUDIO_CHANNEL_RIGHT);
 	}
-#endif /* (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET) && CONFIG_AUDIO_HEADSET_CHANNEL_RUNTIME */
+#endif
 
 	return 0;
 }
@@ -206,7 +206,7 @@ void main(void)
 	ret = hw_codec_init();
 	ERR_CHK(ret);
 	audio_sync_timer_sync_evt_send();
-#endif /* ((NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_GATEWAY) && (CONFIG_AUDIO_SOURCE_USB)) */
+#endif
 
 	/* Initialize BLE, with callback for when BLE is ready */
 	ret = ble_core_init(on_ble_core_ready);
