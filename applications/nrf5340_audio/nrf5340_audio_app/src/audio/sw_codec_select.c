@@ -427,8 +427,6 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 	case SW_CODEC_SBC: {
 #if (CONFIG_SW_CODEC_SBC)
 		m_sbc_enc_params.s16ChannelMode = CONFIG_SBC_CHANNEL_MODE_MONO;
-		/* u16Bitrate requires kHz */
-		m_sbc_enc_params.u16BitRate = CONFIG_SBC_MONO_BITRATE / 1000;
 
 		uint8_t sbc_pcm_stride;
 
@@ -437,6 +435,7 @@ int sw_codec_init(struct sw_codec_config sw_codec_cfg)
 		m_sbc_enc_params.s16SamplingFreq = SBC_sf48000;
 		m_sbc_enc_params.s16NumOfBlocks = CONFIG_SBC_NO_OF_BLOCKS;
 		m_sbc_enc_params.s16NumOfSubBands = CONFIG_SBC_NO_OF_SUBBANDS;
+		m_sbc_enc_params.s16BitPool = CONFIG_SBC_BITPOOL;
 		/* BitPool will be set in the driver by bitrate */
 
 		m_sbc_enc_params.s16AllocationMethod = CONFIG_SBC_BIT_ALLOC_METHOD;

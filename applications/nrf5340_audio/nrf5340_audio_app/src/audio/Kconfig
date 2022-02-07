@@ -149,10 +149,6 @@ endmenu # LC3
 menu "SBC"
 visible if SW_CODEC_SBC
 
-config SBC_MONO_BITRATE
-	int "Bitrate for encoded SBC frames for mono channel"
-	default 140000
-
 config SBC_NUM_FRAMES_PER_BLE_PACKET
 	int "Number of packets be transmitted in one connection interval"
 	range 5 5
@@ -170,6 +166,16 @@ config SBC_NO_OF_BLOCKS
 config SBC_NO_OF_SUBBANDS
 	int "Number of subbands (4, 8)"
 	default 8
+
+config SBC_BITPOOL
+	int "Bitpool value"
+	range 2 53
+	default 18
+	help
+		Bitpool determines the size of each encoded frame.
+		Size of frame = 4 + (blocks * bitpool + 4 * subbands) / 8
+		Frame rate = Sampling rate / (blocks * subbands)
+		Bitrate = size of frame * frame rate
 
 config SBC_BIT_ALLOC_METHOD
 	int "Bit allocation Method (0 -> Loudness, 1 -> SNR)"

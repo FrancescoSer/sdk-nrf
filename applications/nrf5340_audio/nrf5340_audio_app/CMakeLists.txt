@@ -88,8 +88,63 @@ add_subdirectory(src/modules)
 add_subdirectory(src/utils)
 
 ## Bluedroid SBC
+# (Bluekitchen repository considered temporary until SBC is officially included in Zephyr)
 if (CONFIG_SW_CODEC_SBC)
-    include(${EXT_ROOT}/bluedroid/CMakelists.txt)
+    # Locate sbc in local ncs tree
+    if(SW_CODEC_SBC_PATH)
+        # Do nothing, just use the provided path
+    elseif(WEST)
+        ## Use Python and west to find the path
+        execute_process(
+            COMMAND ${PYTHON_EXECUTABLE} -c
+            "from west.manifest import Manifest; manifest = Manifest.from_file(); \
+            print(manifest.get_projects(['btstack'])[0].posixpath)"
+            OUTPUT_VARIABLE
+            west_project_output
+            RESULT_VARIABLE
+            result
+        )
+
+        if(${result})
+            message(FATAL_ERROR "Failed to find SBC, cannot build sample")
+        endif()
+
+        string(REGEX REPLACE "[\r\n]+" "" BLUEKITCHEN_BTSTACK_PATH "${west_project_output}")
+        set(SW_CODEC_SBC_PATH "${BLUEKITCHEN_BTSTACK_PATH}/3rd-party/bluedroid")
+    else()
+        message(FATAL_ERROR "west not installed, please provide SW_CODEC_SBC_PATH to CMake")
+    endif()
+
+    target_include_directories(app PRIVATE ${SW_CODEC_SBC_PATH}/decoder/include/)
+    target_include_directories(app PRIVATE ${SW_CODEC_SBC_PATH}/encoder/include/)
+
+    target_sources(app PRIVATE
+            ${SW_CODEC_SBC_PATH}/decoder/srce/alloc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/bitalloc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/bitalloc-sbc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/bitstream-decode.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/decoder-oina.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/decoder-private.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/decoder-sbc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/dequant.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/framing.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/framing-sbc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/oi_codec_version.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/synthesis-sbc.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/synthesis-dct8.c
+            ${SW_CODEC_SBC_PATH}/decoder/srce/synthesis-8-generated.c
+      )
+
+    target_sources(app PRIVATE
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_analysis.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_dct.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_dct_coeffs.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_enc_bit_alloc_mono.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_enc_bit_alloc_ste.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_enc_coeffs.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_encoder.c
+            ${SW_CODEC_SBC_PATH}/encoder/srce/sbc_packing.c
+      )
 endif()
 
 ## LC3
