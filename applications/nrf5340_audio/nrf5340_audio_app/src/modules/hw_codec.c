@@ -9,6 +9,8 @@
 #include <zephyr.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <drivers/gpio.h>
+#include <device.h>
 
 #include "macros_common.h"
 #include "cs47l63.h"
@@ -44,6 +46,26 @@ static int cs47l63_comm_reg_conf_write(const uint32_t config[][2], uint32_t num_
 			RET_IF_ERR(ret);
 		}
 	}
+
+	return 0;
+}
+
+/**@brief Select the on-board HW codec
+ */
+static int hw_codec_on_board_set(void)
+{
+	int ret;
+	static const struct device *gpio_dev;
+
+	gpio_dev = device_get_binding("GPIO_0");
+
+	if (gpio_dev == NULL) {
+		return -ENXIO;
+	}
+
+	ret = gpio_pin_configure(gpio_dev, DT_GPIO_PIN(DT_NODELABEL(dsp_sel_out), gpios),
+				 GPIO_OUTPUT_LOW);
+	RET_IF_ERR(ret);
 
 	return 0;
 }
@@ -228,8 +250,12 @@ int hw_codec_init(void)
 {
 	int ret;
 
+	/* Set to internal/on board codec */
+	ret = hw_codec_on_board_set();
+	RET_IF_ERR(ret);
+
 	ret = cs47l63_comm_init(&cs47l63_driver);
-	ERR_CHK(ret);
+	RET_IF_ERR(ret);
 
 	/* Run a soft reset on start to make sure all registers are default values */
 	ret = cs47l63_comm_reg_conf_write(soft_reset, ARRAY_SIZE(soft_reset));
