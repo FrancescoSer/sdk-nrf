@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2021 Nordic Semiconductor ASA
+# Copyright (c) 2022 Nordic Semiconductor ASA
 #
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
 """
-Temporary script to perform checks in the minim5340 application folder
+Temporary script to perform checks in the applications/nrf5340_audio folder
 """
 
 import subprocess
@@ -13,8 +13,8 @@ import glob
 import os
 import sys
 
-def clang_format_all_files_run():
-    """ Pre-commit check running"""
+def check_run():
+    """ Run checks"""
     print("=== Running checks ===")
     NCS_BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
     folders = [NCS_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/', NCS_BASE+'/tests/nrf5340_audio/**/']
@@ -28,7 +28,7 @@ def clang_format_all_files_run():
 
         if not files:
             print("No files found")
-            sys.exit(-1)
+            sys.exit(1)
 
     os.chdir(NCS_BASE)
 
@@ -42,7 +42,7 @@ def clang_format_all_files_run():
             err, out = po.communicate()
         except Exception as exep:
             print(exep)
-            sys.exit(-1)
+            sys.exit(1)
         else:
             if po.returncode != 0:
                 print("FAIL: Clang")
@@ -56,7 +56,7 @@ def clang_format_all_files_run():
             po.communicate()
         except Exception as exep:
             print(exep)
-            sys.exit(-1)
+            sys.exit(1)
         else:
             if po.returncode != 0:
                 print("FAIL: Checkpatch")
@@ -75,7 +75,7 @@ def clang_format_all_files_run():
         err, out = po.communicate()
     except Exception as exep:
         print(exep)
-        sys.exit(-1)
+        sys.exit(1)
     else:
         print(out.decode('utf-8'))
         if po.returncode != 0:
@@ -88,8 +88,12 @@ def clang_format_all_files_run():
 
     if twister_failed:
         print("Twister failed")
-    else:
-        print("===Check.py passed!=== " + str(len(files)) + " files checked")
+
+    if files_failed or twister_failed:
+        sys.exit(1)
+
+    print("===Check.py passed!=== " + str(len(files)) + " files checked")
+    sys.exit(0)
 
 if __name__ == '__main__':
-    clang_format_all_files_run()
+    check_run()
