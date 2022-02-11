@@ -12,12 +12,13 @@ import subprocess
 import glob
 import os
 import sys
+from pathlib import Path
 
 def check_run():
     """ Run checks"""
     print("=== Running checks ===")
-    NCS_BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
-    folders = [NCS_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/', NCS_BASE+'/tests/nrf5340_audio/**/']
+    NRF_BASE = str(Path(__file__).absolute().parents[3])
+    folders = [NRF_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/', NRF_BASE+'/tests/nrf5340_audio/**/']
     filetypes = ('*.c', '*.h')
     files = []
     files_failed = []
@@ -30,10 +31,15 @@ def check_run():
             print("No files found")
             sys.exit(1)
 
-    os.chdir(NCS_BASE)
+    os.chdir(NRF_BASE)
 
     for file in files:
-        print(file)
+        print("======================")
+        if file.find('build') != -1:
+            print("Excluding" + file)
+            continue
+
+        print("Checking: "+file)
         file_passed = True
         cmd = " ls --color=always; clang-format --Werror --dry-run " + file
 
@@ -64,8 +70,6 @@ def check_run():
 
         if not file_passed:
             files_failed.append(file)
-
-        print("======================")
 
 
     cmd = "$ZEPHYR_BASE/scripts/twister -v -T tests/ -t nrf5340_audio_unit_tests -p qemu_cortex_m3 -i"

@@ -22,7 +22,7 @@
  * @param amplitude     Amplitude in the range (0..1]
  *
  * @retval 0            Tone generated
- * @retval -ENXIO       If tone is NULL
+ * @retval -ENXIO       If tone or tone_size is NULL
  * @retval -EINVAL      If smpl_freq_hz == 0 or tone_freq_hz is out of range
  * @retval -EPERM       If amplitude is out of range
  */

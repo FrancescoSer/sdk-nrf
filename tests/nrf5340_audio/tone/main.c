@@ -78,6 +78,9 @@ void test_illegal_args(void)
 	/* NULL ptr */
 	zassert_equal(tone_gen(NULL, &tone_size, freq, smpl_freq, amplitude), -ENXIO,
 		      "Wrong code returned");
+	/* NULL ptr */
+	zassert_equal(tone_gen(tone, NULL, freq, smpl_freq, amplitude), -ENXIO,
+		      "Wrong code returned");
 	/* 0 freq */
 	zassert_equal(tone_gen(tone, &tone_size, 0, smpl_freq, amplitude), -EINVAL,
 		      "Wrong code returned");
@@ -98,7 +101,7 @@ void test_illegal_args(void)
 
 void test_main(void)
 {
-	ztest_test_suite(test_suite_contin_array, ztest_unit_test(test_tone_gen_valid),
+	ztest_test_suite(test_suite_tone, ztest_unit_test(test_tone_gen_valid),
 			 ztest_unit_test(test_illegal_args));
-	ztest_run_test_suite(test_suite_contin_array);
+	ztest_run_test_suite(test_suite_tone);
 }
