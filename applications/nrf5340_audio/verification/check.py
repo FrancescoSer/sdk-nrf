@@ -14,11 +14,14 @@ import os
 import sys
 from pathlib import Path
 
+
 def check_run():
     """ Run checks"""
     print("=== Running checks ===")
     NRF_BASE = str(Path(__file__).absolute().parents[3])
-    folders = [NRF_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/', NRF_BASE+'/tests/nrf5340_audio/**/']
+    folders =\
+    [NRF_BASE+'/applications/nrf5340_audio/nrf5340_audio_app/src/**/',
+        NRF_BASE+'/tests/nrf5340_audio/**/']
     filetypes = ('*.c', '*.h')
     files = []
     files_failed = []
@@ -41,10 +44,11 @@ def check_run():
 
         print("Checking: "+file)
         file_passed = True
-        cmd = " ls --color=always; clang-format --Werror --dry-run " + file
+        cmd = "clang-format --Werror --dry-run " + file
 
         try:
-            po = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            po = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE,
+                                  stdout=subprocess.PIPE)
             err, out = po.communicate()
         except Exception as exep:
             print(exep)
@@ -55,8 +59,9 @@ def check_run():
                 print(out.decode('utf-8'))
                 file_passed = False
 
-
-        cmd = "git diff /dev/null " + file + " | ${ZEPHYR_BASE}/scripts/checkpatch.pl -"
+        # Hash from: git hash-object -t tree /dev/null. Cross-platform support
+        cmd = "git diff 4b825dc642cb6eb9a060e54bf8d69288fbee4904 " + file +\
+        " | perl "+os.getenv('ZEPHYR_BASE')+"/scripts/checkpatch.pl --no-tree"
         try:
             po = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
             po.communicate()
@@ -71,8 +76,8 @@ def check_run():
         if not file_passed:
             files_failed.append(file)
 
-
-    cmd = "$ZEPHYR_BASE/scripts/twister -v -T tests/ -t nrf5340_audio_unit_tests -p qemu_cortex_m3 -i"
+    cmd = os.getenv('ZEPHYR_BASE')+"/scripts/twister -v -T tests/ -t " +\
+    "nrf5340_audio_unit_tests -p qemu_cortex_m3 -i"
     twister_failed = True
     try:
         po = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
@@ -88,7 +93,8 @@ def check_run():
             twister_failed = False
 
     if files_failed:
-        print("Check.py Fail. Number of files failed: " + str(len(files_failed)) + " of " + str(len(files)))
+        print("Num files failed: " +
+              str(len(files_failed)) + " of " + str(len(files)))
 
     if twister_failed:
         print("Twister failed")
