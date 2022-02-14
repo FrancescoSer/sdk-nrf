@@ -22,7 +22,6 @@ message("NRF5340_AUDIO_REPO_ROOT is set to: ${NRF5340_AUDIO_REPO_ROOT}")
 set(NRF5340_AUDIO_SRC ${NRF5340_AUDIO_REPO_ROOT}/nrf5340_audio_app/src)
 set(EXT_ROOT ${NRF5340_AUDIO_REPO_ROOT}/ext)
 set(LC3_ROOT ${NRF5340_AUDIO_REPO_ROOT}/../../../modules/lib/lc3)
-set(CIRRUS_ROOT ${EXT_ROOT}/cirrus_logic)
 
 # Add core specific config
 set(CONF_FILE "${CONF_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/prj.conf")

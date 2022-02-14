@@ -1,10 +1,10 @@
 /**
- * @file sdk_version.h
+ * @file cs47l63_syscfg_regs.h
  *
- * @brief Alt-OS SDK version literals
+ * @brief Register values to be applied after CS47L63 Driver boot().
  *
  * @copyright
- * Copyright (c) Cirrus Logic 2020 All Rights Reserved, http://www.cirrus.com/
+ * Copyright (c) Cirrus Logic 2022 All Rights Reserved, http://www.cirrus.com/
  *
  * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
@@ -18,10 +18,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ * wisce_to_syscfg_reg_converter.py SDK version: 4.11.0 - 61ee6c0881e6270b4df6e990d502275c00aad6c9
+ * Command:  ..\..\tools\wisce_script_converter\wisce_script_converter.py -i wisce_init.txt -p cs47l63 -c c_array
+ *
  */
 
-#ifndef SDK_VERSION_H
-#define SDK_VERSION_H
+#ifndef CS47L63_SYSCFG_REGS_H
+#define CS47L63_SYSCFG_REGS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,34 +33,13 @@ extern "C" {
 /***********************************************************************************************************************
  * INCLUDES
  **********************************************************************************************************************/
+#include "stdint.h"
+#include "regmap.h"
 
 /***********************************************************************************************************************
  * LITERALS & CONSTANTS
  **********************************************************************************************************************/
-
-/**
- * @defgroup SDK_VERSION_
- * @brief Defines for the release version of the SDK
- *
- * @details
- * Versions for the SDK are defined as:
- * - Major - The interface of the firmware or module has changed in a way that breaks backwards compatibility. This
- * means that the module will not work as before if the old interface is used.
- * - Minor - The interface of the firmware or module has changed, but not in a way that breaks backwards compatibility.
- * This means that the module will work as before if the old interface is used.
- * - Patch - The function has changed without changing the interface, for instance for a bug fix.
- *
- * @{
- */
-#define SDK_VERSION_MAJOR   (4) ///< Release Major version
-#define SDK_VERSION_MINOR   (0) ///< Release Minor version
-#define SDK_VERSION_PATCH   (0) ///< Release Patch version
-/** @} */
-
-
-/***********************************************************************************************************************
- * MACROS
- **********************************************************************************************************************/
+#define CS47L63_SYSCFG_REGS_TOTAL (30)
 
 /***********************************************************************************************************************
  * ENUMS, STRUCTS, UNIONS, TYPEDEFS
@@ -66,14 +48,10 @@ extern "C" {
 /***********************************************************************************************************************
  * GLOBAL VARIABLES
  **********************************************************************************************************************/
+extern uint32_t cs47l63_syscfg_regs[];
 
-/***********************************************************************************************************************
- * API FUNCTIONS
- **********************************************************************************************************************/
-
-/**********************************************************************************************************************/
 #ifdef __cplusplus
 }
 #endif
 
-#endif // SDK_VERSION_H
+#endif // CS47L63_SYSCFG_REGS_H

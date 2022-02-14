@@ -35,6 +35,8 @@ manifest:
       url-base: https://github.com/memfault
     - name: bluekitchen
       url-base: https://github.com/bluekitchen
+    - name: cirrus
+      url-base: https://github.com/CirrusLogic
 
   # If not otherwise specified, the projects below should be obtained
   # from the ncs remote.
@@ -184,6 +186,13 @@ manifest:
       path: modules/lib/btstack
       revision: 8aee7659ad3834657f63c8f458ef08fb0e2c0059
       remote: bluekitchen
+      groups:
+      - nrf5340_audio
+    - name: cirrus
+      repo-path: mcu-drivers
+      path: modules/hal/cirrus-logic
+      revision: pull/2/head
+      remote: cirrus
       groups:
       - nrf5340_audio
 

@@ -22,7 +22,6 @@
 LOG_MODULE_REGISTER(CS47L63, CONFIG_LOG_CS47L63_LEVEL);
 
 #define DEFAULT_DEVID 0x47A63
-#define BUS_TYPE_SPI 1
 #define PAD_LEN 4 /* Four bytes padding after address */
 /* Delay the processing thread to allow interrupts to settle after boot */
 #define CS47L63_PROCESS_THREAD_DELAY_MS 10
@@ -319,10 +318,10 @@ static void cs47l63_comm_thread(void *cs47l63_driver, void *dummy2, void *dummy3
 	}
 }
 
-static cs47l63_bsp_config_t bsp_config = { .bsp_dev_id = 1,
-					   .bsp_reset_gpio_id = CS47L63_RESET_PIN,
+static cs47l63_bsp_config_t bsp_config = { .bsp_reset_gpio_id = CS47L63_RESET_PIN,
 					   .bsp_int_gpio_id = CS47L63_INT_PIN,
-					   .bus_type = BUS_TYPE_SPI,
+					   .cp_config.bus_type = CS47L63_BUS_TYPE_SPI,
+					   .cp_config.spi_pad_len = 4,
 					   .notification_cb = &notification_callback,
 					   .notification_cb_arg = NULL };
 

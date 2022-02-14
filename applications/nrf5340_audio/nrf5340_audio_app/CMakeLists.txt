@@ -161,4 +161,41 @@ if (CONFIG_SW_CODEC_LC3)
 endif()
 
 ## Cirrus HW codec resources
-include(${CIRRUS_ROOT}/CMakeLists.txt)
+# Locate cirrus in local ncs tree
+if(HW_CODEC_CIRRUS_LOGIC_PATH)
+    # Do nothing, just use the provided path
+elseif(WEST)
+    ## Use Python and west to find the path
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} -c
+        "from west.manifest import Manifest; manifest = Manifest.from_file(); \
+        print(manifest.get_projects(['cirrus'])[0].posixpath)"
+        OUTPUT_VARIABLE
+        west_project_output
+        RESULT_VARIABLE
+        result
+    )
+
+    if(${result})
+        message(FATAL_ERROR "Failed to find Cirrus Logic HW Codec drivers. Cannot build sample")
+    endif()
+
+    string(REGEX REPLACE "[\r\n]+" "" CIRRUS_PATH "${west_project_output}")
+    set(HW_CODEC_CIRRUS_LOGIC_PATH ${CIRRUS_PATH})
+else()
+    message(FATAL_ERROR "west not installed, please provide HW_CODEC_CIRRUS_LOGIC_PATH to CMake")
+endif()
+
+target_sources(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/cs47l63.c)
+target_sources(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/common/regmap.c)
+target_sources(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/bsp/bsp_cs47l63.c)
+target_sources(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/bsp/vregmap.c)
+
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH})
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/common)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/common/bridge)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/common/platform_bsp)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/bsp)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/config)
+zephyr_library_include_directories(app PRIVATE ${HW_CODEC_CIRRUS_LOGIC_PATH}/cs47l63/fw_pt)
