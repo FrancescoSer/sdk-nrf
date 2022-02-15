@@ -177,6 +177,7 @@ int audio_encode_test_tone_set(uint32_t freq)
 	return 0;
 }
 
+/* This function is only used on gateway using USB as audio source and bidirectional stream */
 int audio_decode(void const *const encoded_data, size_t encoded_data_size, bool bad_frame)
 {
 	int ret;

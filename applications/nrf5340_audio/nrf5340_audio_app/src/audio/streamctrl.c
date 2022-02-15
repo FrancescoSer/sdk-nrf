@@ -49,7 +49,7 @@ struct ble_iso_data {
 	uint8_t data[CONFIG_BT_ISO_RX_MTU];
 	size_t data_size;
 	bool bad_frame;
-	uint32_t ts;
+	uint32_t sdu_ref;
 } __packed;
 
 DATA_FIFO_DEFINE(ble_fifo_rx, CONFIG_BUF_BLE_RX_PACKET_NUM, WB_UP(sizeof(struct ble_iso_data)));
@@ -119,7 +119,7 @@ static void ble_test_pattern_receive(uint8_t const *const p_data, size_t data_si
 
 #if ((NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET) || CONFIG_TRANSPORT_CIS)
 static void ble_iso_rx_data_handler(uint8_t const *const p_data, size_t data_size, bool bad_frame,
-				    uint32_t ts)
+				    uint32_t sdu_ref)
 {
 	/* Since the audio datapath thread is preemptive, no actions on the
 	 * FIFO can happen whilst in this handler.
@@ -171,7 +171,7 @@ static void ble_iso_rx_data_handler(uint8_t const *const p_data, size_t data_siz
 
 	iso_received->bad_frame = bad_frame;
 	iso_received->data_size = data_size;
-	iso_received->ts = ts;
+	iso_received->sdu_ref = sdu_ref;
 
 	ret = data_fifo_block_lock(&ble_fifo_rx, (void *)&iso_received,
 				   sizeof(struct ble_iso_data));
@@ -198,12 +198,12 @@ static void audio_datapath_thread(void *dummy1, void *dummy2, void *dummy3)
 		ERR_CHK(ret);
 #else
 		audio_datapath_stream_out(iso_received->data, iso_received->data_size,
-					  iso_received->ts, iso_received->bad_frame);
+					  iso_received->sdu_ref, iso_received->bad_frame);
 #endif /* ((NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_GATEWAY) && (CONFIG_AUDIO_SOURCE_USB)) */
 #else
 #if (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET)
 		audio_datapath_stream_out(iso_received->data, iso_received->data_size,
-					  iso_received->ts, iso_received->bad_frame);
+					  iso_received->sdu_ref, iso_received->bad_frame);
 #endif /* (NRF5340_AUDIO_DEV == NRF5340_AUDIO_DEV_HEADSET) */
 #endif /* (CONFIG_STREAM_BIDIRECTIONAL) */
 

@@ -531,7 +531,7 @@ static void alt_buffer_free(void const *const p_buffer)
  * New I2S RX data is located in rx_buf_released, and is locked into
  * the in.fifo message queue.
  */
-static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_released,
+static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *rx_buf_released,
 					    uint32_t const *tx_buf_released)
 {
 	int ret;
@@ -540,7 +540,8 @@ static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_releas
 	alt_buffer_free(tx_buf_released);
 
 	/*** Presentation delay measurement ***/
-	ctrl_blk.out.meas_pres_dly_us = ts - ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx];
+	ctrl_blk.out.meas_pres_dly_us =
+		frame_start_ts - ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx];
 
 	/********** I2S TX **********/
 	static uint8_t *tx_buf;
@@ -626,7 +627,7 @@ static void audio_datapath_i2s_blk_complete(uint32_t ts, uint32_t *rx_buf_releas
 	audio_i2s_set_next_buf(tx_buf, rx_buf);
 
 	/*** Drift compensation ***/
-	ctrl_blk.local.last_ts = ts;
+	ctrl_blk.local.last_ts = frame_start_ts;
 	audio_datapath_drift_compensation();
 }
 

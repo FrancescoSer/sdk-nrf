@@ -57,7 +57,7 @@ typedef void (*audio_sync_timer_handler_t)(void);
  *
  * @return Captured value
  */
-uint32_t audio_sync_timer_i2s_tx_ts_get(void);
+uint32_t audio_sync_timer_i2s_frame_start_ts_get(void);
 
 /**
  * @brief Get the currrent timer value

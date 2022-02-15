@@ -55,10 +55,10 @@ LOG_MODULE_REGISTER(audio_sync_timer, CONFIG_LOG_AUDIO_SYNC_TIMER_LEVEL);
 
 #define AUDIO_SYNC_TIMER_INSTANCE 1
 
-#define AUDIO_SYNC_TIMER_I2S_TX_EVT_CAPTURE_CHANNEL 0
+#define AUDIO_SYNC_TIMER_I2S_FRAME_START_EVT_CAPTURE_CHANNEL 0
 #define AUDIO_SYNC_TIMER_CURR_TIME_CAPTURE_CHANNEL 1
 
-#define AUDIO_SYNC_TIMER_I2S_TX_EVT_CAPTURE NRF_TIMER_TASK_CAPTURE0
+#define AUDIO_SYNC_TIMER_I2S_FRAME_START_EVT_CAPTURE NRF_TIMER_TASK_CAPTURE0
 
 #define AUDIO_SYNC_TIMER_COMPARE_EVT NRF_TIMER_EVENT_COMPARE3
 
@@ -70,7 +70,7 @@ static const nrfx_timer_t timer_instance = NRFX_TIMER_INSTANCE(AUDIO_SYNC_TIMER_
 static audio_sync_timer_handler_t timer_callback;
 
 static uint8_t dppi_channel_timer_clear;
-static uint8_t dppi_channel_i2s_tx;
+static uint8_t dppi_channel_i2s_frame_start;
 
 static nrfx_timer_config_t cfg = { .frequency = NRF_TIMER_FREQ_1MHz,
 				   .mode = NRF_TIMER_MODE_TIMER,
@@ -88,9 +88,10 @@ static void event_handler(nrf_timer_event_t event_type, void *ctx)
 	}
 }
 
-uint32_t audio_sync_timer_i2s_tx_ts_get(void)
+uint32_t audio_sync_timer_i2s_frame_start_ts_get(void)
 {
-	return nrfx_timer_capture_get(&timer_instance, AUDIO_SYNC_TIMER_I2S_TX_EVT_CAPTURE_CHANNEL);
+	return nrfx_timer_capture_get(&timer_instance,
+				      AUDIO_SYNC_TIMER_I2S_FRAME_START_EVT_CAPTURE_CHANNEL);
 }
 
 uint32_t audio_sync_timer_curr_time_get(void)
@@ -114,18 +115,17 @@ int audio_sync_timer_init(void)
 	}
 	nrfx_timer_enable(&timer_instance);
 
-	/* I2S frame time uses capture timestamp at I2S_TX_EVT_CAPTURE event. */
-	ret = nrfx_dppi_channel_alloc(&dppi_channel_i2s_tx);
+	ret = nrfx_dppi_channel_alloc(&dppi_channel_i2s_frame_start);
 	if (ret - NRFX_ERROR_BASE_NUM) {
-		LOG_ERR("nrfx DPPI channel alloc error (I2S TX) - Return value: %d", ret);
+		LOG_ERR("nrfx DPPI channel alloc error (I2S frame start) - Return value: %d", ret);
 		return ret;
 	}
-	nrf_timer_subscribe_set(timer_instance.p_reg, AUDIO_SYNC_TIMER_I2S_TX_EVT_CAPTURE,
-				dppi_channel_i2s_tx);
-	nrf_i2s_publish_set(NRF_I2S0, NRF_I2S_EVENT_TXPTRUPD, dppi_channel_i2s_tx);
-	ret = nrfx_dppi_channel_enable(dppi_channel_i2s_tx);
+	nrf_timer_subscribe_set(timer_instance.p_reg, AUDIO_SYNC_TIMER_I2S_FRAME_START_EVT_CAPTURE,
+				dppi_channel_i2s_frame_start);
+	nrf_i2s_publish_set(NRF_I2S0, NRF_I2S_EVENT_FRAMESTART, dppi_channel_i2s_frame_start);
+	ret = nrfx_dppi_channel_enable(dppi_channel_i2s_frame_start);
 	if (ret - NRFX_ERROR_BASE_NUM) {
-		LOG_ERR("nrfx DPPI channel enable error (I2S TX) - Return value: %d", ret);
+		LOG_ERR("nrfx DPPI channel enable error (I2S frame start) - Return value: %d", ret);
 		return ret;
 	}
 

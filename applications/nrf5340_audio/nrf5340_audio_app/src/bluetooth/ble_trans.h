@@ -57,10 +57,10 @@ enum ble_evt_type {
  * @param data			Pointer to received data
  * @param size			Size of received data
  * @param bad_frame		Indicating if the frame is a bad frame or not
- * @param ts			ISO timestamp
+ * @param sdu_ref		ISO timestamp
  */
 typedef void (*ble_trans_iso_rx_cb_t)(const uint8_t *const data, size_t size, bool bad_frame,
-				      uint32_t ts);
+				      uint32_t sdu_ref);
 
 /**@brief	Enable the ISO packet lost notify feature
  *

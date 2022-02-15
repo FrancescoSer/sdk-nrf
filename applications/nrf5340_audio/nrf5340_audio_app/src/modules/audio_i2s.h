@@ -75,11 +75,11 @@
 /**
  * @brief I2S block complete event callback type
  *
- * @param ts I2S RX timestamp
+ * @param frame_start_ts I2S frame start timestamp
  * @param rx_buf_released Pointer to the released buffer containing received data
  * @param tx_buf_released Pointer to the released buffer that was used to sent data
  */
-typedef void (*i2s_blk_comp_callback_t)(uint32_t ts, uint32_t *rx_buf_released,
+typedef void (*i2s_blk_comp_callback_t)(uint32_t frame_start_ts, uint32_t *rx_buf_released,
 					uint32_t const *tx_buf_released);
 
 /**
