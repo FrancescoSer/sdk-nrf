@@ -131,4 +131,3 @@ leds:	leds {
 		sw4 = &button5;
 	};
 };
-

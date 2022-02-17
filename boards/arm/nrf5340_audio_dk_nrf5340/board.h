@@ -14,11 +14,11 @@
  * This is determined by the on-board voltage divider.
  */
 
-typedef struct {
+struct board_version {
 	char name[10];
 	uint32_t mask;
 	uint32_t adc_reg_val;
-} board_version_t;
+};
 
 #define BOARD_PCA10121_0_0_0_MSK (BIT(0))
 #define BOARD_PCA10121_0_6_0_MSK (BIT(1))
@@ -31,7 +31,7 @@ typedef struct {
 #define BOARD_PCA10121_0_10_0_MSK (BIT(8))
 #define BOARD_PCA10121_1_0_0_MSK (BIT(9))
 
-static const board_version_t BOARD_VERSION_ARR[] = {
+static const struct board_version BOARD_VERSION_ARR[] = {
 	{ "0.0.0", BOARD_PCA10121_0_0_0_MSK, INT_MIN },
 	{ "0.6.0", BOARD_PCA10121_0_6_0_MSK, 61 },
 	{ "0.7.0", BOARD_PCA10121_0_7_0_MSK, 102 },
@@ -77,9 +77,9 @@ static const board_version_t BOARD_VERSION_ARR[] = {
 #endif
 
 #if ((NRF5340_AUDIO_DEV != NRF5340_AUDIO_DEV_HEADSET) &&                                           \
-     (NRF5340_AUDIO_DEV != NRF5340_AUDIO_DEV_GATEWAY))
+	(NRF5340_AUDIO_DEV != NRF5340_AUDIO_DEV_GATEWAY))
 #error NRF5340_AUDIO_DEV must be set to either NRF5340_AUDIO_DEV_HEADSET or \
-       NRF5340_AUDIO_DEV_GATEWAY
+	  NRF5340_AUDIO_DEV_GATEWAY
 #endif
 
 #endif

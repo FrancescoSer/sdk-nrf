@@ -9,7 +9,6 @@
 from threading import Thread
 from os import system
 from nrf5340_audio_dk_devices import SelectFlags
-import subprocess
 
 MEM_ADDR_UICR_SNR = 0x00FF80F0
 MEM_ADDR_UICR_CH = 0x00FF80F4

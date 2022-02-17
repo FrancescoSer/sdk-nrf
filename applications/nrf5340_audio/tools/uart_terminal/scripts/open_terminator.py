@@ -10,7 +10,7 @@ from get_serial_ports import get_serial_ports
 
 ports = get_serial_ports()
 
-if (int(sys.argv[1]) < len(ports)):
+if int(sys.argv[1]) < len(ports):
     subprocess.Popen(["minicom", "--color=on", "-b 1000000", "-8", "-D " + ports[int(sys.argv[1])]])
 else:
     print("Not enough boards connected")

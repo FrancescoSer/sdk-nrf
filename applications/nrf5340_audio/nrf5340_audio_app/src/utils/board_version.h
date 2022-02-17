@@ -19,7 +19,7 @@
  * @return 0 on success.
  * Error code on fault or -ESPIPE if no valid version found
  */
-int board_version_get(board_version_t *board_rev);
+int board_version_get(struct board_version *board_rev);
 
 /**@brief Check that the FW is compatible with the HW version
  *

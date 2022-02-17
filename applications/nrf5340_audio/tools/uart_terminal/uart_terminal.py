@@ -11,9 +11,9 @@ sys.path.append("./scripts")
 
 from open_putty import open_putty
 
-if (sys.platform == "linux"):
+if sys.platform == "linux":
     terminator = subprocess.Popen(["terminator", "--config=scripts/linux_terminator_config"], stderr=subprocess.PIPE)
-elif (sys.platform == "win32"):
+elif sys.platform == "win32":
     open_putty()
 else:
     print("OS not supported")

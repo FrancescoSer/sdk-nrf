@@ -42,7 +42,7 @@ extern struct k_thread z_main_thread;
 #endif /* defined(CONFIG_INIT_STACKS) */
 
 static atomic_t ble_core_is_ready = (atomic_t) false;
-static board_version_t board_rev;
+static struct board_version board_rev;
 #define SHARED_SPI DT_NODELABEL(spi4) /* SD card and HW codec share the SPI4 */
 
 static int core_app_config(void)

@@ -71,7 +71,7 @@ static int divider_value_get(void)
 /**@brief Traverse all defined versions and get the one with the
  * most similar value. Check tolerances.
  */
-static int version_search(int reg_value, uint32_t tolerance, board_version_t *board_rev)
+static int version_search(int reg_value, uint32_t tolerance, struct board_version *board_rev)
 {
 	uint32_t diff;
 	uint32_t smallest_diff = UINT_MAX;
@@ -128,7 +128,7 @@ static int board_version_init(void)
 	return 0;
 }
 
-int board_version_get(board_version_t *board_rev)
+int board_version_get(struct board_version *board_rev)
 {
 	int ret;
 
@@ -147,7 +147,7 @@ int board_version_get(board_version_t *board_rev)
 int board_version_valid_check(void)
 {
 	int ret;
-	board_version_t board_rev;
+	struct board_version board_rev;
 
 	ret = board_version_get(&board_rev);
 	RET_IF_ERR_MSG(ret, "Unable to get any board version");
