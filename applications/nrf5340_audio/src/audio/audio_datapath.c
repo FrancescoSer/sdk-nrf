@@ -101,10 +101,10 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 /* Number of octets in a single audio block */
 #define BLK_MONO_SIZE_OCTETS (BLK_MONO_NUM_SAMPS * CONFIG_AUDIO_BIT_DEPTH_OCTETS)
 #define BLK_STEREO_SIZE_OCTETS (BLK_MONO_SIZE_OCTETS * 2)
-/* How much data to be collected before moving on with drift compensation */
-#define LOCAL_NUM_DATA_PTS (DRIFT_MEAS_PERIOD_US / BLK_PERIOD_US)
+/* How many function calls before moving on with drift compensation */
+#define DRIFT_COMP_WAITING_CNT (DRIFT_MEAS_PERIOD_US / BLK_PERIOD_US)
 /* How much data to be collected before moving on with presentation compensation */
-#define REMOTE_NUM_DATA_PTS (DRIFT_MEAS_PERIOD_US / FRAME_DURATION_US)
+#define PRES_COMP_NUM_DATA_PTS (DRIFT_MEAS_PERIOD_US / FRAME_DURATION_US)
 
 /* Audio clock - nRF5340 Analog Phase-Locked Loop (APLL) */
 #define APLL_FREQ_CENTER 39854
@@ -120,13 +120,12 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 #define PRES_COMP_ENABLE true
 /* Presentation delay in microseconds */
 #define PRES_DLY_US 10000
-#define PRES_ERR_THRESH_LOCK_US 1000
 
 /* How often to print underrun warning */
 #define UNDERRUN_LOG_INTERVAL_BLKS 5000
 
 enum drift_comp_state {
-	DRFT_STATE_INIT, /* Wireless data path init - Initialize drift compensation */
+	DRFT_STATE_INIT, /* Waiting for data to be received */
 	DRFT_STATE_CALIB, /* Calibrate and zero out local delay */
 	DRFT_STATE_OFFSET, /* Adjust I2S offset relative to SDU Reference */
 	DRFT_STATE_LOCKED /* Drift compensation locked - Minor corrections */
@@ -140,7 +139,7 @@ static const char *const drift_comp_state_names[] = {
 };
 
 enum pres_comp_state {
-	PRES_STATE_INIT, /* Wireless data path init - Initialize presentation compensation */
+	PRES_STATE_INIT, /* Initialize presentation compensation */
 	PRES_STATE_MEAS, /* Measure presentation delay */
 	PRES_STATE_WAIT, /* Wait for some time */
 	PRES_STATE_LOCKED /* Presentation compensation locked */
@@ -166,37 +165,27 @@ static struct {
 		int16_t __aligned(sizeof(uint32_t)) fifo[MAX_FIFO_SIZE];
 		uint16_t prod_blk_idx; /* Output producer audio block index */
 		uint16_t cons_blk_idx; /* Output consumer audio block index */
-		uint32_t meas_pres_dly_us;
 		uint32_t prod_blk_ts[FIFO_NUM_BLKS];
 		/* Statistics */
-		uint32_t total_frames;
-		uint32_t total_prod_blks;
-		uint32_t total_cons_blks;
 		uint32_t total_blk_underruns;
 	} out;
 
-	struct {
-		uint32_t last_ts;
-	} remote;
-
-	struct {
-		uint32_t last_ts;
-	} local;
+	uint32_t previous_sdu_ref_us;
+	uint32_t current_pres_dly_us;
 
 	struct {
 		enum drift_comp_state state : 8;
-		uint16_t ctr; /* Counter for collected data points */
+		uint16_t ctr; /* Counting function calls - Used for waiting */
 		uint32_t meas_start_time_us;
 		uint32_t center_freq;
 		bool hfclkaudio_comp_enabled;
-	} drift_adj;
+	} drift_comp;
 
 	struct {
 		enum pres_comp_state state : 8;
-		uint16_t ctr; /* Counter for collected data points (also used in waiting state) */
-		int32_t err_dly_us;
+		uint16_t ctr; /* Counting function calls - Used for collecting data points and waiting */
 		int32_t sum_err_dly_us;
-	} pres_adj;
+	} pres_comp;
 } ctrl_blk;
 
 static bool tone_active;
@@ -211,7 +200,7 @@ static void hfclkaudio_set(uint16_t freq_value)
 	freq_val = MIN(freq_val, APLL_FREQ_MAX);
 	freq_val = MAX(freq_val, APLL_FREQ_MIN);
 
-	if (!ctrl_blk.drift_adj.hfclkaudio_comp_enabled) {
+	if (!ctrl_blk.drift_comp.hfclkaudio_comp_enabled) {
 		return;
 	}
 
@@ -220,59 +209,60 @@ static void hfclkaudio_set(uint16_t freq_value)
 
 static void drift_comp_state_set(enum drift_comp_state new_state)
 {
-	if (new_state == ctrl_blk.drift_adj.state) {
+	if (new_state == ctrl_blk.drift_comp.state) {
+		LOG_WRN("Trying to change to the same drift compensation state");
 		return;
 	}
 
-	ctrl_blk.drift_adj.state = new_state;
+	ctrl_blk.drift_comp.ctr = 0;
+
+	ctrl_blk.drift_comp.state = new_state;
 	LOG_INF("Drft comp state: %s", drift_comp_state_names[new_state]);
 }
 
-static void audio_datapath_drift_compensation(void)
+/**
+ * @brief Adjust frequency of HFCLKAUDIO to get audio in sync
+ *
+ * @note The audio sync is based on sdu_ref
+ *
+ * @param frame_start_ts I2S frame start timestamp
+ */
+static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 {
-	switch (ctrl_blk.drift_adj.state) {
+	switch (ctrl_blk.drift_comp.state) {
 	case DRFT_STATE_INIT: {
-		if (++ctrl_blk.drift_adj.ctr < LOCAL_NUM_DATA_PTS) {
-			/* Same state - Allow wireless to initialize data path */
-			return;
-		}
-
-		if (ctrl_blk.remote.last_ts) {
-			ctrl_blk.drift_adj.ctr = 0;
-			ctrl_blk.drift_adj.meas_start_time_us = ctrl_blk.remote.last_ts;
+		/* Check if audio data has been received */
+		if (ctrl_blk.previous_sdu_ref_us) {
+			ctrl_blk.drift_comp.meas_start_time_us = ctrl_blk.previous_sdu_ref_us;
 
 			drift_comp_state_set(DRFT_STATE_CALIB);
 		}
 		break;
 	}
 	case DRFT_STATE_CALIB: {
-		if (++ctrl_blk.drift_adj.ctr < LOCAL_NUM_DATA_PTS) {
-			/* Same state - Collect more data */
+		if (++ctrl_blk.drift_comp.ctr < DRIFT_COMP_WAITING_CNT) {
+			/* Waiting */
 			return;
 		}
 
-		ctrl_blk.drift_adj.ctr = 0;
-
-		int32_t err_us = DRIFT_MEAS_PERIOD_US -
-				 (ctrl_blk.remote.last_ts - ctrl_blk.drift_adj.meas_start_time_us);
+		int32_t err_us = DRIFT_MEAS_PERIOD_US - (ctrl_blk.previous_sdu_ref_us -
+							 ctrl_blk.drift_comp.meas_start_time_us);
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
-		ctrl_blk.drift_adj.center_freq = APLL_FREQ_CENTER + freq_adj;
+		ctrl_blk.drift_comp.center_freq = APLL_FREQ_CENTER + freq_adj;
 
-		hfclkaudio_set(ctrl_blk.drift_adj.center_freq);
+		hfclkaudio_set(ctrl_blk.drift_comp.center_freq);
 
 		drift_comp_state_set(DRFT_STATE_OFFSET);
 		break;
 	}
 	case DRFT_STATE_OFFSET: {
-		if (++ctrl_blk.drift_adj.ctr < LOCAL_NUM_DATA_PTS) {
-			/* Same state - Collect more data */
+		if (++ctrl_blk.drift_comp.ctr < DRIFT_COMP_WAITING_CNT) {
+			/* Waiting */
 			return;
 		}
 
-		ctrl_blk.drift_adj.ctr = 0;
-
-		int32_t err_us = (ctrl_blk.remote.last_ts - ctrl_blk.local.last_ts) % BLK_PERIOD_US;
+		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
 		if (err_us > (BLK_PERIOD_US / 2)) {
 			err_us = err_us - BLK_PERIOD_US;
@@ -280,7 +270,7 @@ static void audio_datapath_drift_compensation(void)
 
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
-		hfclkaudio_set(ctrl_blk.drift_adj.center_freq + freq_adj);
+		hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
 
 		if ((err_us < DRIFT_ERR_THRESH_LOCK) && (err_us > -DRIFT_ERR_THRESH_LOCK)) {
 			drift_comp_state_set(DRFT_STATE_LOCKED);
@@ -289,14 +279,12 @@ static void audio_datapath_drift_compensation(void)
 		break;
 	}
 	case DRFT_STATE_LOCKED: {
-		if (++ctrl_blk.drift_adj.ctr < LOCAL_NUM_DATA_PTS) {
-			/* Same state - Collect more data */
+		if (++ctrl_blk.drift_comp.ctr < DRIFT_COMP_WAITING_CNT) {
+			/* Waiting */
 			return;
 		}
 
-		ctrl_blk.drift_adj.ctr = 0;
-
-		int32_t err_us = (ctrl_blk.remote.last_ts - ctrl_blk.local.last_ts) % BLK_PERIOD_US;
+		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
 		if (err_us > (BLK_PERIOD_US / 2)) {
 			err_us = err_us - BLK_PERIOD_US;
@@ -306,10 +294,12 @@ static void audio_datapath_drift_compensation(void)
 		err_us /= 2;
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
-		hfclkaudio_set(ctrl_blk.drift_adj.center_freq + freq_adj);
+		hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
 
 		if ((err_us > DRIFT_ERR_THRESH_UNLOCK) || (err_us < -DRIFT_ERR_THRESH_UNLOCK)) {
 			drift_comp_state_set(DRFT_STATE_OFFSET);
+		} else {
+			ctrl_blk.drift_comp.ctr = 0;
 		}
 
 		break;
@@ -324,11 +314,13 @@ static void pres_comp_state_set(enum pres_comp_state new_state)
 {
 	int ret;
 
-	if (new_state == ctrl_blk.pres_adj.state) {
+	if (new_state == ctrl_blk.pres_comp.state) {
 		return;
 	}
 
-	ctrl_blk.pres_adj.state = new_state;
+	ctrl_blk.pres_comp.ctr = 0;
+
+	ctrl_blk.pres_comp.state = new_state;
 	LOG_INF("Pres comp state: %s", pres_comp_state_names[new_state]);
 	if (new_state == PRES_STATE_LOCKED) {
 		ret = led_on(LED_APP_2_GREEN);
@@ -338,63 +330,64 @@ static void pres_comp_state_set(enum pres_comp_state new_state)
 	ERR_CHK(ret);
 }
 
-static int32_t audio_datapath_presentation_compensation(uint32_t exp_dly_us)
+/**
+ * @brief Move audio blocks back and forth in FIFO to get audio in sync
+ *
+ * @note The audio sync is based on sdu_ref
+ *
+ * @param cur_time Timestamp of when frame was received
+ * @param sdu_ref ISO timestamp reference from BLE controller
+ * @param missing_blks Amount of missing blocks (caused by missed frame(s))
+ */
+static void audio_datapath_presentation_compensation(uint32_t cur_time, uint32_t sdu_ref,
+						     uint32_t missing_blks)
 {
-	if (ctrl_blk.drift_adj.state != DRFT_STATE_LOCKED) {
+	if (ctrl_blk.drift_comp.state != DRFT_STATE_LOCKED) {
 		/* Unconditionally reset state machine if drift compensation looses lock */
 		pres_comp_state_set(PRES_STATE_INIT);
-		return 0;
+		return;
 	}
 
+	/* Move presentation compensation into PRES_STATE_WAIT if audio frame is missed */
+	if (missing_blks) {
+		LOG_WRN("Missed audio frame");
+		pres_comp_state_set(PRES_STATE_WAIT);
+	}
+
+	int32_t wanted_pres_dly_us = PRES_DLY_US - (cur_time - sdu_ref);
 	int32_t pres_adj_us = 0;
 
-	switch (ctrl_blk.pres_adj.state) {
+	switch (ctrl_blk.pres_comp.state) {
 	case PRES_STATE_INIT: {
-		ctrl_blk.pres_adj.ctr = 0;
-		ctrl_blk.pres_adj.sum_err_dly_us = 0;
+		ctrl_blk.pres_comp.sum_err_dly_us = 0;
 		pres_comp_state_set(PRES_STATE_MEAS);
 		break;
 	}
 	case PRES_STATE_MEAS: {
-		if (ctrl_blk.pres_adj.ctr++ < REMOTE_NUM_DATA_PTS) {
-			ctrl_blk.pres_adj.sum_err_dly_us +=
-				exp_dly_us - ctrl_blk.out.meas_pres_dly_us;
+		if (ctrl_blk.pres_comp.ctr++ < PRES_COMP_NUM_DATA_PTS) {
+			ctrl_blk.pres_comp.sum_err_dly_us +=
+				wanted_pres_dly_us - ctrl_blk.current_pres_dly_us;
 
 			/* Same state - Collect more data */
 			break;
 		}
 
-		ctrl_blk.pres_adj.ctr = 0;
-
-		ctrl_blk.pres_adj.err_dly_us =
-			ctrl_blk.pres_adj.sum_err_dly_us / REMOTE_NUM_DATA_PTS;
-
 #if (PRES_COMP_ENABLE)
-		pres_adj_us = ctrl_blk.pres_adj.err_dly_us;
+		pres_adj_us = ctrl_blk.pres_comp.sum_err_dly_us / PRES_COMP_NUM_DATA_PTS;
 #endif /* (PRES_COMP_ENABLE) */
-
-		/* Restart measurement */
-		ctrl_blk.pres_adj.sum_err_dly_us = 0;
 
 		if ((pres_adj_us >= (BLK_PERIOD_US / 2)) || (pres_adj_us <= -(BLK_PERIOD_US / 2))) {
 			pres_comp_state_set(PRES_STATE_WAIT);
 			break;
-		}
-
-		/* Advance state if presentation compensation result is within bounds,
-		 * otherwise restart measurement
-		 */
-		if ((ctrl_blk.pres_adj.err_dly_us < PRES_ERR_THRESH_LOCK_US) &&
-		    (ctrl_blk.pres_adj.err_dly_us > -PRES_ERR_THRESH_LOCK_US)) {
+		} else {
 			/* Drift compensation will always be in DRFT_STATE_LOCKED here */
-
 			pres_comp_state_set(PRES_STATE_LOCKED);
 		}
 
 		break;
 	}
 	case PRES_STATE_WAIT: {
-		if (ctrl_blk.pres_adj.ctr++ > (FIFO_SMPL_PERIOD_US / FRAME_DURATION_US)) {
+		if (ctrl_blk.pres_comp.ctr++ > (FIFO_SMPL_PERIOD_US / FRAME_DURATION_US)) {
 			pres_comp_state_set(PRES_STATE_INIT);
 		}
 
@@ -413,14 +406,65 @@ static int32_t audio_datapath_presentation_compensation(uint32_t exp_dly_us)
 	}
 	}
 
-	return pres_adj_us;
+	if (pres_adj_us == 0) {
+		return;
+	}
+
+	if (pres_adj_us >= 0) {
+		pres_adj_us += (BLK_PERIOD_US / 2);
+	} else {
+		pres_adj_us += -(BLK_PERIOD_US / 2);
+	}
+
+	/* Number of adjustment blocks is 0 as long as |pres_adj_us| < BLK_PERIOD_US */
+	int32_t pres_adj_blks = pres_adj_us / BLK_PERIOD_US;
+
+	if (pres_adj_blks > (FIFO_NUM_BLKS / 2)) {
+		/* Limit adjustment */
+		pres_adj_blks = FIFO_NUM_BLKS / 2;
+
+		LOG_WRN("Requested presentation delay out of range: pres_adj_us=%d", pres_adj_us);
+	} else if (pres_adj_blks < -(FIFO_NUM_BLKS / 2)) {
+		/* Limit adjustment */
+		pres_adj_blks = -(FIFO_NUM_BLKS / 2);
+
+		LOG_WRN("Requested presentation delay out of range: pres_adj_us=%d", pres_adj_us);
+	}
+
+	/* Adjust Sample FIFO with missing blocks */
+	pres_adj_blks += missing_blks;
+
+	if (pres_adj_blks > 0) {
+		LOG_DBG("Presentation delay inserted: pres_adj_blks=%d", pres_adj_blks);
+
+		/* Increase presentation delay */
+		for (int i = 0; i < pres_adj_blks; i++) {
+			/* Mute audio block */
+			memset(&ctrl_blk.out
+					.fifo[ctrl_blk.out.prod_blk_idx * BLK_MONO_NUM_SAMPS * 2],
+			       0, BLK_STEREO_SIZE_OCTETS);
+
+			/* Record producer block start reference */
+			ctrl_blk.out.prod_blk_ts[ctrl_blk.out.prod_blk_idx] =
+				cur_time - ((pres_adj_blks - i) * BLK_PERIOD_US);
+
+			ctrl_blk.out.prod_blk_idx = NEXT_IDX(ctrl_blk.out.prod_blk_idx);
+		}
+	} else if (pres_adj_blks < 0) {
+		LOG_DBG("Presentation delay removed: pres_adj_blks=%d", pres_adj_blks);
+
+		/* Reduce presentation delay */
+		for (int i = 0; i > pres_adj_blks; i--) {
+			ctrl_blk.out.prod_blk_idx = PREV_IDX(ctrl_blk.out.prod_blk_idx);
+		}
+	}
 }
 
 static void tone_stop_worker(struct k_work *work)
 {
 	tone_active = false;
 	memset(test_tone_buf, 0, sizeof(test_tone_buf));
-	LOG_INF("Tone stopped");
+	LOG_DBG("Tone stopped");
 }
 
 K_WORK_DEFINE(tone_stop_work, tone_stop_worker);
@@ -450,7 +494,7 @@ int audio_datapath_tone_play(uint16_t freq, uint16_t dur_ms, float amplitude)
 	}
 
 	tone_active = true;
-	LOG_INF("Tone started");
+	LOG_DBG("Tone started");
 	return 0;
 }
 
@@ -485,7 +529,8 @@ static struct {
 	bool buf_1_in_use;
 } alt;
 
-/**@brief Get first available alternative-buffer
+/**
+ * @brief Get first available alternative-buffer
  *
  * @param p_buffer Double pointer to populate with buffer
  *
@@ -507,8 +552,9 @@ static int alt_buffer_get(void **p_buffer)
 	return 0;
 }
 
-/**@brief Checks if pointer matches that of a buffer
- *	  and frees it in one operation
+/**
+ * @brief Checks if pointer matches that of a buffer
+ *	      and frees it in one operation
  *
  * @param p_buffer Buffer to free
  */
@@ -542,7 +588,7 @@ static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *r
 	alt_buffer_free(tx_buf_released);
 
 	/*** Presentation delay measurement ***/
-	ctrl_blk.out.meas_pres_dly_us =
+	ctrl_blk.current_pres_dly_us =
 		frame_start_ts - ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx];
 
 	/********** I2S TX **********/
@@ -578,6 +624,10 @@ static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *r
 		memset(tx_buf, 0, BLK_STEREO_SIZE_OCTETS);
 		underrun_condition = true;
 		ctrl_blk.out.total_blk_underruns++;
+	}
+
+	if (tone_active) {
+		tone_mix(tx_buf);
 	}
 
 	/********** I2S RX **********/
@@ -621,16 +671,11 @@ static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *r
 
 	ERR_CHK_MSG(ret, "RX failed to get block");
 
-	if (tone_active) {
-		tone_mix(tx_buf);
-	}
-
 	/*** Data exchange ***/
 	audio_i2s_set_next_buf(tx_buf, rx_buf);
 
 	/*** Drift compensation ***/
-	ctrl_blk.local.last_ts = frame_start_ts;
-	audio_datapath_drift_compensation();
+	audio_datapath_drift_compensation(frame_start_ts);
 }
 
 static void audio_datapath_i2s_start(void)
@@ -678,190 +723,123 @@ static void audio_datapath_i2s_stop(void)
 
 void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref, bool bad_frame)
 {
-	if (ctrl_blk.stream_started) {
-		uint32_t cur_time = audio_sync_timer_curr_time_get();
+	uint32_t cur_time = audio_sync_timer_curr_time_get();
 
-		if (sdu_ref == ctrl_blk.remote.last_ts) {
-			LOG_WRN("Duplicate timestamp - Dropping audio frame: sdu_ref=%d", sdu_ref);
-			return;
-		}
-
-		/*** Drift control ***/
-
-		uint32_t missing_blk = 0;
-
-		if (buf && ctrl_blk.remote.last_ts) {
-			uint32_t last_out_delta_us = sdu_ref - ctrl_blk.remote.last_ts;
-
-			/* Guard against invalid timestamps */
-			if (last_out_delta_us < (FRAME_DURATION_US + (FRAME_DURATION_US / 2))) {
-				if ((last_out_delta_us >
-				     (FRAME_DURATION_US + TIMESTAMP_DELTA_MAX_ERR_US)) ||
-				    (last_out_delta_us <
-				     (FRAME_DURATION_US - TIMESTAMP_DELTA_MAX_ERR_US))) {
-					LOG_WRN("Invalid timestamp delta: %d", last_out_delta_us);
-
-					/* Estimate timestamp */
-					last_out_delta_us = FRAME_DURATION_US;
-					sdu_ref = ctrl_blk.remote.last_ts + last_out_delta_us;
-				}
-			}
-
-			if (last_out_delta_us > (BLK_PERIOD_US / 2)) {
-				uint32_t last_out_blk =
-					(last_out_delta_us - (BLK_PERIOD_US / 2)) /
-					BLK_PERIOD_US; /* Ensure use of low average */
-				missing_blk =
-					(last_out_blk / NUM_BLKS_IN_FRAME) * NUM_BLKS_IN_FRAME;
-			} else {
-				return;
-			}
-		}
-
-		/* Move presentation compensation into PRES_STATE_WAIT if audio frame is missed */
-		if (missing_blk) {
-			LOG_WRN("Missed audio frame");
-			ctrl_blk.pres_adj.ctr = 0;
-			pres_comp_state_set(PRES_STATE_WAIT);
-		}
-
-		if (buf) {
-			ctrl_blk.remote.last_ts = sdu_ref;
-		} else {
-			LOG_WRN("Missed audio packet");
-
-			/* Estimate timestamp */
-			ctrl_blk.remote.last_ts += FRAME_DURATION_US;
-		}
-
-		/* When to play received audio */
-		int32_t exp_dly_us = PRES_DLY_US - (cur_time - sdu_ref);
-		int32_t pres_adj_us = audio_datapath_presentation_compensation(exp_dly_us);
-
-		if (pres_adj_us >= 0) {
-			pres_adj_us += (BLK_PERIOD_US / 2);
-		} else {
-			pres_adj_us += -(BLK_PERIOD_US / 2);
-		}
-
-		/* Number of adjustment blocks is 0 as long as |pres_adj_us| < BLK_PERIOD_US */
-		int32_t pres_adj_blks = pres_adj_us / BLK_PERIOD_US;
-
-		if (pres_adj_blks > (FIFO_NUM_BLKS / 2)) {
-			/* Limit adjustment */
-			pres_adj_blks = FIFO_NUM_BLKS / 2;
-
-			LOG_WRN("Req. pres. delay out of range: pres_adj_us=%d, total_frames=%u",
-				pres_adj_us, ctrl_blk.out.total_frames);
-		} else if (pres_adj_blks < -(FIFO_NUM_BLKS / 2)) {
-			/* Limit adjustment */
-			pres_adj_blks = -(FIFO_NUM_BLKS / 2);
-
-			LOG_WRN("Req. pres. delay out of range: pres_adj_us=%d, total_frames=%u",
-				pres_adj_us, ctrl_blk.out.total_frames);
-		}
-
-		/* Adjust Sample FIFO with missing blocks */
-		pres_adj_blks += missing_blk;
-
-		if (pres_adj_blks > 0) {
-			LOG_DBG("Presentation delay inserted: pres_adj_blks=%d, total_frames=%u",
-				pres_adj_blks, ctrl_blk.out.total_frames);
-
-			/* Increase presentation delay */
-			for (int i = 0; i < pres_adj_blks; i++) {
-				/* Mute audio frame */
-				memset(&ctrl_blk.out.fifo[ctrl_blk.out.prod_blk_idx *
-							  BLK_MONO_NUM_SAMPS * 2],
-				       0, BLK_STEREO_SIZE_OCTETS);
-
-				/* Record producer block start reference */
-				ctrl_blk.out.prod_blk_ts[ctrl_blk.out.prod_blk_idx] =
-					cur_time - ((pres_adj_blks - i) * BLK_PERIOD_US);
-
-				ctrl_blk.out.prod_blk_idx = NEXT_IDX(ctrl_blk.out.prod_blk_idx);
-				ctrl_blk.out.total_prod_blks++;
-			}
-		} else if (pres_adj_blks < 0) {
-			LOG_DBG("Presentation delay removed: pres_adj_blks=%d, total_frames=%u",
-				pres_adj_blks, ctrl_blk.out.total_frames);
-
-			/* Reduce presentation delay */
-			for (int i = 0; i > pres_adj_blks; i--) {
-				ctrl_blk.out.prod_blk_idx = PREV_IDX(ctrl_blk.out.prod_blk_idx);
-			}
-		}
-
-		/*** Decode ***/
-
-		if (buf) {
-			int ret;
-			size_t pcm_size; /* Not currently in use */
-
-			ret = sw_codec_decode(buf, size, bad_frame, &ctrl_blk.decoded_data,
-					      &pcm_size);
-
-			if (ret && !bad_frame) {
-				LOG_WRN("SW codec decode error: %d", ret);
-			}
-		}
-
-		ctrl_blk.out.total_frames++;
-
-		/*** Output ***/
-
-		int32_t out_dly_blks = ctrl_blk.out.prod_blk_idx - ctrl_blk.out.cons_blk_idx;
-
-		if ((out_dly_blks + NUM_BLKS_IN_FRAME) > FIFO_NUM_BLKS) {
-			LOG_WRN("Output audio stream overrun: total_prod_blks=%u",
-				ctrl_blk.out.total_prod_blks);
-
-			/* Discard frame to allow consumer to catch up */
-			return;
-		}
-
-		uint32_t out_blk_idx = ctrl_blk.out.prod_blk_idx;
-
-		for (uint32_t i = 0; i < NUM_BLKS_IN_FRAME; i++) {
-			memcpy(&ctrl_blk.out.fifo[out_blk_idx * BLK_MONO_NUM_SAMPS * 2],
-			       &((int16_t *)ctrl_blk.decoded_data)[i * BLK_MONO_NUM_SAMPS * 2],
-			       BLK_MONO_SIZE_OCTETS * 2);
-
-			/* Record producer block start reference */
-			ctrl_blk.out.prod_blk_ts[out_blk_idx] = cur_time + (i * BLK_PERIOD_US);
-
-			out_blk_idx = NEXT_IDX(out_blk_idx);
-		}
-
-		/* Advance */
-		ctrl_blk.out.prod_blk_idx = out_blk_idx;
-		ctrl_blk.out.total_prod_blks += NUM_BLKS_IN_FRAME;
-	} else {
+	if (!ctrl_blk.stream_started) {
 		LOG_WRN("Stream not started");
+		return;
 	}
+
+	if (sdu_ref == ctrl_blk.previous_sdu_ref_us) {
+		LOG_WRN("Duplicate timestamp - Dropping audio frame: sdu_ref=%d", sdu_ref);
+		return;
+	}
+
+	/*** Check incomming data ***/
+
+	uint32_t missing_blks = 0;
+
+	if (buf && ctrl_blk.previous_sdu_ref_us) {
+		uint32_t last_out_delta_us = sdu_ref - ctrl_blk.previous_sdu_ref_us;
+
+		/* Guard against invalid timestamps */
+		if (last_out_delta_us < (FRAME_DURATION_US + (FRAME_DURATION_US / 2))) {
+			if ((last_out_delta_us >
+			     (FRAME_DURATION_US + TIMESTAMP_DELTA_MAX_ERR_US)) ||
+			    (last_out_delta_us <
+			     (FRAME_DURATION_US - TIMESTAMP_DELTA_MAX_ERR_US))) {
+				LOG_WRN("Invalid timestamp delta: %d", last_out_delta_us);
+
+				/* Estimate timestamp */
+				last_out_delta_us = FRAME_DURATION_US;
+				sdu_ref = ctrl_blk.previous_sdu_ref_us + last_out_delta_us;
+			}
+		}
+
+		if (last_out_delta_us > (BLK_PERIOD_US / 2)) {
+			uint32_t last_out_blk = (last_out_delta_us - (BLK_PERIOD_US / 2)) /
+						BLK_PERIOD_US; /* Ensure use of low average */
+			missing_blks = (last_out_blk / NUM_BLKS_IN_FRAME) * NUM_BLKS_IN_FRAME;
+		} else {
+			return;
+		}
+	}
+
+	if (!bad_frame) {
+		ctrl_blk.previous_sdu_ref_us = sdu_ref;
+	} else {
+		LOG_WRN("Missed audio packet");
+
+		/* Estimate timestamp */
+		ctrl_blk.previous_sdu_ref_us += FRAME_DURATION_US;
+	}
+
+	/*** Presentation compensation ***/
+
+	audio_datapath_presentation_compensation(cur_time, sdu_ref, missing_blks);
+
+	/*** Decode ***/
+
+	if (buf) {
+		int ret;
+		size_t pcm_size; /* Not currently in use */
+
+		ret = sw_codec_decode(buf, size, bad_frame, &ctrl_blk.decoded_data, &pcm_size);
+
+		if (ret && !bad_frame) {
+			LOG_WRN("SW codec decode error: %d", ret);
+		}
+	}
+
+	/*** Add audio data to FIFO buffer ***/
+
+	int32_t out_dly_blks = ctrl_blk.out.prod_blk_idx - ctrl_blk.out.cons_blk_idx;
+
+	if ((out_dly_blks + NUM_BLKS_IN_FRAME) > FIFO_NUM_BLKS) {
+		LOG_WRN("Output audio stream overrun - Discarding audio frame");
+
+		/* Discard frame to allow consumer to catch up */
+		return;
+	}
+
+	uint32_t out_blk_idx = ctrl_blk.out.prod_blk_idx;
+
+	for (uint32_t i = 0; i < NUM_BLKS_IN_FRAME; i++) {
+		memcpy(&ctrl_blk.out.fifo[out_blk_idx * BLK_MONO_NUM_SAMPS * 2],
+		       &((int16_t *)ctrl_blk.decoded_data)[i * BLK_MONO_NUM_SAMPS * 2],
+		       BLK_MONO_SIZE_OCTETS * 2);
+
+		/* Record producer block start reference */
+		ctrl_blk.out.prod_blk_ts[out_blk_idx] = cur_time + (i * BLK_PERIOD_US);
+
+		out_blk_idx = NEXT_IDX(out_blk_idx);
+	}
+
+	/* Advance */
+	ctrl_blk.out.prod_blk_idx = out_blk_idx;
 }
 
 int audio_datapath_start(struct data_fifo *fifo_rx)
 {
 	__ASSERT_NO_MSG(fifo_rx != NULL);
 
-	if (ctrl_blk.datapath_initialized) {
-		if (!ctrl_blk.stream_started) {
-			ctrl_blk.in.fifo = fifo_rx;
-
-			/* Clear counters and mute initial audio */
-			memset(&ctrl_blk.out, 0, sizeof(ctrl_blk.out));
-
-			audio_datapath_i2s_start();
-			ctrl_blk.stream_started = true;
-
-			return 0;
-		} else {
-			return -EALREADY;
-		}
-	} else {
+	if (!ctrl_blk.datapath_initialized) {
 		LOG_WRN("Audio datapath not initialized");
 		return -ECANCELED;
+	}
+
+	if (!ctrl_blk.stream_started) {
+		ctrl_blk.in.fifo = fifo_rx;
+
+		/* Clear counters and mute initial audio */
+		memset(&ctrl_blk.out, 0, sizeof(ctrl_blk.out));
+
+		audio_datapath_i2s_start();
+		ctrl_blk.stream_started = true;
+
+		return 0;
+	} else {
+		return -EALREADY;
 	}
 }
 
@@ -870,7 +848,7 @@ int audio_datapath_stop(void)
 	if (ctrl_blk.stream_started) {
 		ctrl_blk.stream_started = false;
 		audio_datapath_i2s_stop();
-		ctrl_blk.remote.last_ts = 0;
+		ctrl_blk.previous_sdu_ref_us = 0;
 
 		pres_comp_state_set(PRES_STATE_INIT);
 
@@ -885,7 +863,7 @@ int audio_datapath_init(void)
 	memset(&ctrl_blk, 0, sizeof(ctrl_blk));
 	audio_i2s_blk_comp_cb_register(audio_datapath_i2s_blk_complete);
 	ctrl_blk.datapath_initialized = true;
-	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = true;
+	ctrl_blk.drift_comp.hfclkaudio_comp_enabled = true;
 
 	return 0;
 }
@@ -960,7 +938,7 @@ static int cmd_hfclkaudio_drift_comp_enable(const struct shell *shell, size_t ar
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
-	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = true;
+	ctrl_blk.drift_comp.hfclkaudio_comp_enabled = true;
 
 	shell_print(shell, "Audio PLL drift compensation enabled");
 
@@ -973,7 +951,7 @@ static int cmd_hfclkaudio_drift_comp_disable(const struct shell *shell, size_t a
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
-	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = false;
+	ctrl_blk.drift_comp.hfclkaudio_comp_enabled = false;
 
 	shell_print(shell, "Audio PLL drift compensation disabled");
 

@@ -60,14 +60,10 @@ LOG_MODULE_REGISTER(audio_sync_timer, CONFIG_LOG_AUDIO_SYNC_TIMER_LEVEL);
 
 #define AUDIO_SYNC_TIMER_I2S_FRAME_START_EVT_CAPTURE NRF_TIMER_TASK_CAPTURE0
 
-#define AUDIO_SYNC_TIMER_COMPARE_EVT NRF_TIMER_EVENT_COMPARE3
-
-#define AUDIO_SYNC_IPC_EVT NRF_IPC_EVENT_RECEIVE_4
-#define AUDIO_SYNC_IPC_SIGNAL_IDX 4
+#define AUDIO_SYNC_TIMER_NET_APP_IPC_EVT NRF_IPC_EVENT_RECEIVE_4
+#define AUDIO_SYNC_TIMER_NET_APP_IPC_SIGNAL_IDX 4
 
 static const nrfx_timer_t timer_instance = NRFX_TIMER_INSTANCE(AUDIO_SYNC_TIMER_INSTANCE);
-
-static audio_sync_timer_handler_t timer_callback;
 
 static uint8_t dppi_channel_timer_clear;
 static uint8_t dppi_channel_i2s_frame_start;
@@ -80,12 +76,6 @@ static nrfx_timer_config_t cfg = { .frequency = NRF_TIMER_FREQ_1MHz,
 
 static void event_handler(nrf_timer_event_t event_type, void *ctx)
 {
-	if (event_type == AUDIO_SYNC_TIMER_COMPARE_EVT) {
-		if (timer_callback) {
-			/* Data in/encoding related - Not currently implemented */
-			timer_callback();
-		}
-	}
 }
 
 uint32_t audio_sync_timer_i2s_frame_start_ts_get(void)
@@ -101,7 +91,7 @@ uint32_t audio_sync_timer_curr_time_get(void)
 
 void audio_sync_timer_sync_evt_send(void)
 {
-	nrfx_ipc_signal(AUDIO_SYNC_IPC_SIGNAL_IDX);
+	nrfx_ipc_signal(AUDIO_SYNC_TIMER_NET_APP_IPC_SIGNAL_IDX);
 }
 
 int audio_sync_timer_init(void)
@@ -115,6 +105,7 @@ int audio_sync_timer_init(void)
 	}
 	nrfx_timer_enable(&timer_instance);
 
+	/* Initialize capturing of I2S frame start event timestamps */
 	ret = nrfx_dppi_channel_alloc(&dppi_channel_i2s_frame_start);
 	if (ret - NRFX_ERROR_BASE_NUM) {
 		LOG_ERR("nrfx DPPI channel alloc error (I2S frame start) - Return value: %d", ret);
@@ -129,13 +120,13 @@ int audio_sync_timer_init(void)
 		return ret;
 	}
 
-	/* Arm timestamp timer for synchronization with NET CPU */
+	/* Initialize functionality for synchronization between APP and NET core */
 	ret = nrfx_dppi_channel_alloc(&dppi_channel_timer_clear);
 	if (ret - NRFX_ERROR_BASE_NUM) {
 		LOG_ERR("nrfx DPPI channel alloc error (timer clear) - Return value: %d", ret);
 		return ret;
 	}
-	nrf_ipc_publish_set(NRF_IPC, AUDIO_SYNC_IPC_EVT, dppi_channel_timer_clear);
+	nrf_ipc_publish_set(NRF_IPC, AUDIO_SYNC_TIMER_NET_APP_IPC_EVT, dppi_channel_timer_clear);
 	nrf_timer_subscribe_set(timer_instance.p_reg, NRF_TIMER_TASK_CLEAR,
 				dppi_channel_timer_clear);
 	ret = nrfx_dppi_channel_enable(dppi_channel_timer_clear);

@@ -48,11 +48,6 @@
 #include <stdint.h>
 
 /**
- * @brief Audio sync timer event callback type
- */
-typedef void (*audio_sync_timer_handler_t)(void);
-
-/**
  * @brief Get the I2S TX timestamp
  *
  * @return Captured value
