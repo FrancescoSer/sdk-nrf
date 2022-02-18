@@ -19,8 +19,6 @@
  * limitations under the License.
  *
  * wisce_to_syscfg_reg_converter.py SDK version: 4.11.0 - 61ee6c0881e6270b4df6e990d502275c00aad6c9
- * Command:  ..\..\tools\wisce_script_converter\wisce_script_converter.py -i
- *           wisce_init.txt -p cs47l63 -c c_array
  *
  */
 

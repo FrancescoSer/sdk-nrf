@@ -19,8 +19,6 @@
  * limitations under the License.
  *
  * firmware_converter.py version: 3.1.0
- * Command:  ../../tools/firmware_converter/firmware_converter.py --sym-output
- * ../cs47l63_sym.h fw_img_v2 --generic-sym cs47l63 shelleypassthru_HALO.wmfw
  *
  */
 
