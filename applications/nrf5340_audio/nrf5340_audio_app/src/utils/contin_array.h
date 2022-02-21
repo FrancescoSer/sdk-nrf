@@ -11,8 +11,7 @@
 
 /** @brief. Creates a continuous array from a finite array
  * @param pcm_cont		Pointer to the destination array
- * @param pcm_cont_samples	Number of samples to put in pcm_cont. Must be as large
- *				or smaller than the size of the pcm_cont array
+ * @param pcm_cont_size	        Size of pcm_cont.
  * @param pcm_finite		Pointer to an array of samples/data
  * @param pcm_finite_size	Size of pcm_finite
  * @param finite_pos		Variable used interally. Must be set
