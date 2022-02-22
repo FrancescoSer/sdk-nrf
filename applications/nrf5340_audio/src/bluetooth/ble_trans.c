@@ -240,8 +240,6 @@ static void iso_connected_cb(struct bt_iso_chan *chan)
 {
 	LOG_DBG("ISO Channel %p connected", chan);
 
-	atomic_clear(&iso_tx_pool_alloc[iso_chan_to_idx(chan)]);
-
 	if (iso_trans_type == TRANS_TYPE_BIS) {
 		k_sem_give(&sem_big_sync);
 		k_sem_give(&sem_big_cmplt);
@@ -264,6 +262,8 @@ static void iso_connected_cb(struct bt_iso_chan *chan)
 static void iso_disconnected_cb(struct bt_iso_chan *chan, uint8_t reason)
 {
 	int ret;
+
+	atomic_clear(&iso_tx_pool_alloc[iso_chan_to_idx(chan)]);
 
 	if (iso_trans_type == TRANS_TYPE_BIS) {
 		k_sem_give(&sem_big_term);
@@ -687,6 +687,7 @@ static int iso_tx(uint8_t const *const data, size_t size, uint8_t iso_chan_idx)
 	if (ret < 0) {
 		LOG_ERR("Unable to send ISO data: %d", ret);
 		net_buf_unref(net_buffer);
+		atomic_dec(&iso_tx_pool_alloc[iso_chan_idx]);
 		return ret;
 	}
 	return 0;
@@ -753,6 +754,13 @@ int ble_trans_iso_tx(uint8_t const *const data, size_t size, enum ble_trans_chan
 
 	switch (chan_type) {
 	case BLE_TRANS_CHANNEL_STEREO:
+		if (is_iso_buffer_full(BLE_TRANS_CHANNEL_LEFT) ||
+			is_iso_buffer_full(BLE_TRANS_CHANNEL_RIGHT)) {
+			/* When transmitting stereo,
+			 * make sure there is sufficent buffer space for both channels.
+			 */
+			return -ENOMEM;
+		}
 		ret = iso_tx_data_or_pattern(data, size / 2, BLE_TRANS_CHANNEL_LEFT);
 		RET_IF_ERR(ret);
 		ret = iso_tx_data_or_pattern(&data[size / 2], size / 2, BLE_TRANS_CHANNEL_RIGHT);
