@@ -22,6 +22,7 @@
 LOG_MODULE_REGISTER(HW_CODEC, CONFIG_LOG_HW_CODEC_LEVEL);
 
 #define VOLUME_ADJUST_STEP_DB 3
+#define HW_CODEC_SELECT_DELAY_MS 2
 
 static cs47l63_t cs47l63_driver;
 
@@ -66,6 +67,9 @@ static int hw_codec_on_board_set(void)
 	ret = gpio_pin_configure(gpio_dev, DT_GPIO_PIN(DT_NODELABEL(dsp_sel_out), gpios),
 				 GPIO_OUTPUT_LOW);
 	RET_IF_ERR(ret);
+
+	/* Allow for switches to flip when selecting on board hw_codec */
+	k_msleep(HW_CODEC_SELECT_DELAY_MS);
 
 	return 0;
 }

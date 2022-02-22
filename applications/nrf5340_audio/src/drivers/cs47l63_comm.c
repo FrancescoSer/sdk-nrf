@@ -21,7 +21,7 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(CS47L63, CONFIG_LOG_CS47L63_LEVEL);
 
-#define DEFAULT_DEVID 0x47A63
+#define CS47L63_DEVID_VAL 0x47A63
 #define PAD_LEN 4 /* Four bytes padding after address */
 /* Delay the processing thread to allow interrupts to settle after boot */
 #define CS47L63_PROCESS_THREAD_DELAY_MS 10
@@ -239,15 +239,16 @@ static uint32_t cs47l63_comm_timer_set(uint32_t duration_ms, bsp_callback_t cb, 
 		return BSP_STATUS_FAIL;
 	}
 
-	k_sleep(K_MSEC(duration_ms));
+	k_msleep(duration_ms);
 
 	return BSP_STATUS_OK;
 }
 
 static uint32_t cs47l63_comm_set_supply(uint32_t supply_id, uint8_t supply_state)
 {
-	LOG_ERR("Tried to set supply, not supported");
-	return BSP_STATUS_FAIL;
+	LOG_INF("Tried to set supply, not supported");
+	/* OK is returned in order to make reset function work */
+	return BSP_STATUS_OK;
 }
 
 static uint32_t cs47l63_comm_i2c_reset(uint32_t bsp_dev_id, bool *was_i2c_busy)
@@ -328,7 +329,6 @@ static cs47l63_bsp_config_t bsp_config = { .bsp_reset_gpio_id = CS47L63_RESET_PI
 int cs47l63_comm_init(cs47l63_t *cs47l63_driver)
 {
 	int ret;
-	uint32_t device_id;
 
 	cs47l63_config_t cs47l63_config;
 
@@ -372,7 +372,10 @@ int cs47l63_comm_init(cs47l63_t *cs47l63_driver)
 	ret = gpio_pin_configure(gpio_dev, CS47L63_INT_PIN, GPIO_INPUT | GPIO_PULL_UP);
 	RET_IF_ERR(ret);
 
-	ret = gpio_pin_configure(gpio_dev, CS47L63_RESET_PIN, GPIO_OUTPUT_HIGH);
+	/* CS47L63 reset line is pulled low. This is to avoid rapid toggling as
+	 * reset is asserted in cs47l63_reset
+	 */
+	ret = gpio_pin_configure(gpio_dev, CS47L63_RESET_PIN, GPIO_OUTPUT_LOW);
 	RET_IF_ERR(ret);
 
 	/* Start thread to handle events from CS47L63 */
@@ -381,6 +384,9 @@ int cs47l63_comm_init(cs47l63_t *cs47l63_driver)
 			      NULL, K_PRIO_PREEMPT(CONFIG_CS47L63_THREAD_PRIO), 0,
 			      K_MSEC(CS47L63_PROCESS_THREAD_DELAY_MS));
 	ret = k_thread_name_set(&cs47l63_data, "CS47L63");
+	RET_IF_ERR(ret);
+
+
 
 	/* Initialize CS47L63 drivers */
 	ret = cs47l63_initialize(cs47l63_driver);
@@ -402,13 +408,17 @@ int cs47l63_comm_init(cs47l63_t *cs47l63_driver)
 		return -ENXIO;
 	}
 
-	/* Make sure we are able to communicate with CS47L63 */
-	ret = cs47l63_read_reg(cs47l63_driver, CS47L63_DEVID, &device_id);
-	RET_IF_ERR(ret);
+	/* Will pin reset the device and wait until boot done */
+	ret = cs47l63_reset(cs47l63_driver);
 
-	if (device_id != DEFAULT_DEVID) {
-		LOG_ERR("Wrong device id: 0x%02x, should be 0x%02x", (uint32_t)device_id,
-			DEFAULT_DEVID);
+	if (ret != CS47L63_STATUS_OK) {
+		LOG_ERR("Failed to reset CS47L63");
+		return -ENXIO;
+	}
+
+	if (cs47l63_driver->devid != CS47L63_DEVID_VAL) {
+		LOG_ERR("Wrong device id: 0x%02x, should be 0x%02x", cs47l63_driver->devid,
+			CS47L63_DEVID_VAL);
 		return -EIO;
 	}
 
