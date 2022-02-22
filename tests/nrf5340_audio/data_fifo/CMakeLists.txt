@@ -13,11 +13,11 @@ target_sources(app PRIVATE ${app_sources})
 
 target_sources(app
   PRIVATE
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/data_fifo.c
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/data_fifo.c
   )
 
 target_include_directories(app
   PRIVATE
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/macros/
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/macros/
   )

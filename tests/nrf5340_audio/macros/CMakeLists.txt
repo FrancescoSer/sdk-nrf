@@ -17,5 +17,5 @@ target_sources(app
 
 target_include_directories(app
   PRIVATE
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/macros/
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/macros/
   )

@@ -19,7 +19,7 @@ Examples of flags:
   -DCMAKE_BUILD_TYPE=DEBUG
   -DCMAKE_BUILD_TYPE=RELEASE
 
-Note that the net core is precompiled and is found in `nrf5340_audio/nrf5340_audio_net`. It is recommended to flash net core directly with nrfjprog:
+Note that the net core is precompiled and is found in `nrf5340_audio/bin`. It is recommended to flash net core directly with nrfjprog:
 `nrfjprog --program [hex_file] -f NRF53 --sectorerase --coprocessor CP_NETWORK`
 
 # Running on target

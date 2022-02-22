@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.10.0)
 
-include(../projects.cmake)
+include(projects.cmake)
 
 # Create flag which defines whether to compile for the gateway/dongle or headset
 add_compile_definitions(NRF5340_AUDIO_DEV_HEADSET=1)
@@ -153,6 +153,7 @@ if (CONFIG_SW_CODEC_LC3)
         include(${LC3_ROOT}/CMakeLists.txt)
     else()
         message(FATAL_ERROR "LC3 repository not found\n"
+                "Trying: ${LC3_ROOT}/CMakeLists.txt\n"
                 "Do 'west config manifest.group-filter +nrf5340_audio' "
                 "and then 'west update'.\n"
                 "If access is denied, contact local Nordic Semiconductor "

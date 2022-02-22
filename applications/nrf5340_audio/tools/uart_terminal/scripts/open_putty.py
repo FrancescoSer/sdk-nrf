@@ -7,6 +7,7 @@
 import subprocess
 from get_serial_ports import get_serial_ports
 
+
 def open_putty():
     ports = get_serial_ports()
 

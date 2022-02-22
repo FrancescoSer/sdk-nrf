@@ -23,8 +23,8 @@ from program import program_threads_run
 TARGET_BOARD_NRF5340_AUDIO_DK_APP_NAME = 'nrf5340_audio_dk_nrf5340_cpuapp'
 TARGET_BOARD_NRF5340_AUDIO_DK_NET_NAME = 'nrf5340_audio_dk_nrf5340_cpunet'
 
-TARGET_CORE_APP_FOLDER = '../../nrf5340_audio_app'
-TARGET_CORE_NET_FOLDER = '../../nrf5340_audio_net'
+TARGET_CORE_APP_FOLDER = '../..'
+TARGET_CORE_NET_FOLDER = '../../bin'
 TARGET_DEV_HEADSET_FOLDER = 'build/dev_headset'
 TARGET_DEV_GATEWAY_FOLDER = 'build/dev_gateway'
 TARGET_DEV_BLE_FOLDER = 'dev_ble'
@@ -133,7 +133,8 @@ def __find_snr():
     """Rebooting or programming requires connected programmer/debugger"""
 
     # Use nrfjprog executable for WSL compatibility
-    stdout = subprocess.check_output('nrfjprog --ids', shell=True).decode('utf-8')
+    stdout = subprocess.check_output('nrfjprog --ids',
+                                     shell=True).decode('utf-8')
     snrs = re.findall(r'([\d]+)', stdout)
 
     if not snrs:
@@ -220,7 +221,8 @@ def __main():
                         default=False,
                         nargs="?",
                         const=True,
-                        help="Run nrfjprog sequentially instead of in parallel.")
+                        help="Run nrfjprog sequentially instead of in \
+                        parallel.")
     options = parser.parse_args(args=sys.argv[1:])
 
     boards_snr_connected = __find_snr()

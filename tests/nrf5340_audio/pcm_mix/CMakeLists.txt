@@ -13,10 +13,10 @@ target_sources(app PRIVATE ${app_sources})
 
 target_sources(app
   PRIVATE
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/pcm_mix.c
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/pcm_mix.c
   )
 
 target_include_directories(app
   PRIVATE
-  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/nrf5340_audio_app/src/utils/
+  ${ZEPHYR_BASE}/../nrf/applications/nrf5340_audio/src/utils/
   )
