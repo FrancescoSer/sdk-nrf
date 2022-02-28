@@ -79,6 +79,17 @@ static int core_app_config(void)
 				 GPIO_DS_ALT_HIGH | GPIO_DS_ALT_LOW);
 	RET_IF_ERR(ret);
 
+	gpio_dev = device_get_binding("GPIO_0");
+
+	if (gpio_dev == NULL) {
+		return -ENODEV;
+	}
+
+	/* Set ISET pin for nPM1100 to HIGH to enable 500mA output */
+	ret = gpio_pin_configure(gpio_dev, DT_GPIO_PIN(DT_NODELABEL(pmic_iset_out), gpios),
+				 GPIO_OUTPUT_HIGH);
+	RET_IF_ERR(ret);
+
 	return 0;
 }
 

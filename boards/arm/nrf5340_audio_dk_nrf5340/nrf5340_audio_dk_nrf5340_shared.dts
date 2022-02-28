@@ -93,9 +93,9 @@ leds:	leds {
 				 Low = FTDI to DSP/Codec";
 		};
 
-		pmic_int_in: pmic_int_in {
-			gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
-			label = "PMIC interrupt in.";
+		pmic_iset_out: pmic_iset_out {
+			gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+			label = "PMIC ISET";
 		};
 
 		board_id_en_out: board_id_en_out {
