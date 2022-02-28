@@ -49,6 +49,7 @@ static struct net_buf_pool *iso_tx_pools[] = { UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CH
 static struct bt_iso_chan iso_chan[CONFIG_BT_ISO_MAX_CHAN];
 static struct bt_iso_chan *iso_chan_p[CONFIG_BT_ISO_MAX_CHAN];
 static atomic_t iso_tx_pool_alloc[CONFIG_BT_ISO_MAX_CHAN];
+static atomic_t iso_tx_flush;
 
 struct worker_data {
 	uint8_t channel;
@@ -253,6 +254,9 @@ static void iso_connected_cb(struct bt_iso_chan *chan)
 
 			ret = ble_event_send(BLE_EVT_LINK_READY);
 			ERR_CHK_MSG(ret, "Unable to put event BLE_EVT_LINK_READY in event queue");
+		} else {
+			/* Wait for ongoing transmissions to complete before enqueuing more */
+			atomic_inc(&iso_tx_flush);
 		}
 	} else {
 		LOG_ERR("iso_trans_type error");
@@ -656,6 +660,14 @@ static bool is_iso_buffer_full(uint8_t iso_chan_idx)
 	return false;
 }
 
+static bool is_iso_buffer_empty(uint8_t iso_chan_idx)
+{
+	if (atomic_get(&iso_tx_pool_alloc[iso_chan_idx]) == 0) {
+		return true;
+	}
+	return false;
+}
+
 static int iso_tx(uint8_t const *const data, size_t size, uint8_t iso_chan_idx)
 {
 	int ret;
@@ -761,6 +773,19 @@ int ble_trans_iso_tx(uint8_t const *const data, size_t size, enum ble_trans_chan
 			 */
 			return -ENOMEM;
 		}
+
+		if (atomic_get(&iso_tx_flush)) {
+			/* Make sure the iso tx buffers are empty before starting streaming to
+			 * newly connected device.
+			 */
+			if (is_iso_buffer_empty(BLE_TRANS_CHANNEL_LEFT) &&
+				is_iso_buffer_empty(BLE_TRANS_CHANNEL_RIGHT)) {
+				atomic_dec(&iso_tx_flush);
+			} else {
+				return 0;
+			}
+		}
+
 		ret = iso_tx_data_or_pattern(data, size / 2, BLE_TRANS_CHANNEL_LEFT);
 		RET_IF_ERR(ret);
 		ret = iso_tx_data_or_pattern(&data[size / 2], size / 2, BLE_TRANS_CHANNEL_RIGHT);
