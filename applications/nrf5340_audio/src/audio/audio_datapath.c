@@ -113,7 +113,6 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 /* Use nanoseconds to reduce rounding errors */
 #define APLL_FREQ_ADJ(t) (-((t)*1000) / 331)
 
-#define DRIFT_COMP true
 #define DRIFT_MEAS_PERIOD_US 100000
 #define DRIFT_ERR_THRESH_LOCK 16
 #define DRIFT_ERR_THRESH_UNLOCK 32
@@ -157,7 +156,6 @@ static const char *const pres_comp_state_names[] = {
 static struct {
 	bool datapath_initialized;
 	bool stream_started;
-
 	void *decoded_data;
 
 	struct {
@@ -190,6 +188,7 @@ static struct {
 		uint16_t ctr; /* Counter for collected data points */
 		uint32_t meas_start_time_us;
 		uint32_t center_freq;
+		bool hfclkaudio_comp_enabled;
 	} drift_adj;
 
 	struct {
@@ -207,13 +206,16 @@ static size_t test_tone_size;
 
 static void hfclkaudio_set(uint16_t freq_value)
 {
-#if (DRIFT_COMP)
 	uint16_t freq_val = freq_value;
 
 	freq_val = MIN(freq_val, APLL_FREQ_MAX);
 	freq_val = MAX(freq_val, APLL_FREQ_MIN);
+
+	if (!ctrl_blk.drift_adj.hfclkaudio_comp_enabled) {
+		return;
+	}
+
 	nrfx_clock_hfclkaudio_config_set(freq_val);
-#endif /* (DRIFT_COMP) */
 }
 
 static void drift_comp_state_set(enum drift_comp_state new_state)
@@ -883,6 +885,7 @@ int audio_datapath_init(void)
 	memset(&ctrl_blk, 0, sizeof(ctrl_blk));
 	audio_i2s_blk_comp_cb_register(audio_datapath_i2s_blk_complete);
 	ctrl_blk.datapath_initialized = true;
+	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = true;
 
 	return 0;
 }
@@ -951,11 +954,43 @@ static int cmd_i2s_tone_stop(const struct shell *shell, size_t argc, const char 
 	return 0;
 }
 
+static int cmd_hfclkaudio_drift_comp_enable(const struct shell *shell, size_t argc,
+					    const char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = true;
+
+	shell_print(shell, "Audio PLL drift compensation enabled");
+
+	return 0;
+}
+
+static int cmd_hfclkaudio_drift_comp_disable(const struct shell *shell, size_t argc,
+					     const char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	ctrl_blk.drift_adj.hfclkaudio_comp_enabled = false;
+
+	shell_print(shell, "Audio PLL drift compensation disabled");
+
+	return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(test_cmd,
 			       SHELL_COND_CMD(CONFIG_SHELL, nrf_tone_start, NULL,
 					      "Start local tone from nRF5340.", cmd_i2s_tone_play),
 			       SHELL_COND_CMD(CONFIG_SHELL, nrf_tone_stop, NULL,
 					      "Stop local tone from nRF5340.", cmd_i2s_tone_stop),
+			       SHELL_COND_CMD(CONFIG_SHELL, pll_comp_enable, NULL,
+					      "Enable audio PLL auto drift compensation (default).",
+					      cmd_hfclkaudio_drift_comp_enable),
+			       SHELL_COND_CMD(CONFIG_SHELL, pll_comp_disable, NULL,
+					      "Disable audio PLL auto drift compensation",
+					      cmd_hfclkaudio_drift_comp_disable),
 			       SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(test, &test_cmd, "Test mode commands", NULL);
