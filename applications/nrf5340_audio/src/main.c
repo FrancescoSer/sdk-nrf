@@ -85,9 +85,11 @@ static int core_app_config(void)
 		return -ENODEV;
 	}
 
-	/* Set ISET pin for nPM1100 to HIGH to enable 500mA output */
+	/* USB port detection
+	 * See nPM1100 datasheet for more information
+	 */
 	ret = gpio_pin_configure(gpio_dev, DT_GPIO_PIN(DT_NODELABEL(pmic_iset_out), gpios),
-				 GPIO_OUTPUT_HIGH);
+				 GPIO_OUTPUT_LOW);
 	RET_IF_ERR(ret);
 
 	return 0;
