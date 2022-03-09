@@ -537,7 +537,7 @@ To use the nRF5340 Audio application with your custom board:
 Dependencies
 ************
 
-This application uses the following `sdk-nrfx`_ libraries:
+This application uses the following `nrfx`_ libraries:
 
 * :file:`nrfx_clock.h`
 * :file:`nrfx_gpiote.h`
