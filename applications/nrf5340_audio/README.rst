@@ -41,33 +41,16 @@ The software design of the nRF5340 Audio development kit supports the isochronou
 Firmware architecture
 =====================
 
+.. TODO: UPDATE THIS SECTION
+
 The following figure illustrates the software layout for the nRF5340 Audio application:
 
-TODO figure_update
-
-.. figure:: doc/images/minim_arch.jpg
+.. figure:: /images/octave_application_structure_generic.svg
    :alt: nRF5340 Audio high-level design (overview)
 
    nRF5340 Audio high-level design (overview)
 
-
-Module usage per firmware type
-------------------------------
-
-The following figures show an overview of the modules currently included in the firmware:
-
-.. figure:: doc/images/overview_gateway_using_usb_v1.svg
-   :alt: nRF5340 Audio modules on the gateway using USB
-
-   nRF5340 Audio modules on the gateway using USB
-
-
-.. figure:: doc/images/overview_headsets_and_gateway_using_i2s_v1.svg
-   :alt: nRF5340 Audio modules on the gateway and the headsets using I2S
-
-   nRF5340 Audio modules on the gateway and the headsets using I2S
-
-The network core of the nRF5340 SoC runs the *LE Audio Controller Subsystem for nRF53*.
+The network core of the nRF5340 SoC runs the *Bluetooth LE Audio Controller subsystem for nRF53*.
 The application core runs Zephyr as the Bluetooth LE host, as well as other modules, like the following:
 
 * From the |NCS|:
@@ -89,15 +72,66 @@ The application core runs Zephyr as the Bluetooth LE host, as well as other modu
 
   * LC3 encoder/decoder (as a precompiled library, see `octave_requirements`_)
 
-Since the application architecture is uniform and the firmware code is shared, the set of modules in use depends on the chosen stream mode (BIS or CIS),  the chosen audio inputs and outputs (USB or analog jack), and if the gateway or the headset configuration is selected.
+Since the application architecture is uniform and the firmware code is shared, the set of modules in use depends on the chosen stream mode (BIS or CIS), the chosen audio inputs and outputs (USB or analog jack), and if the gateway or the headset configuration is selected.
 
 .. note::
    In the current version of the application, no bootloader is used, and device firmware update (DFU) is not supported.
 
+USB-based firmware
+------------------
+
+The following figure shows an overview of the modules currently included in the firmware that uses USB:
+
+.. figure:: /images/octave_application_structure_gateway.svg
+   :alt: nRF5340 Audio modules on the gateway using USB
+
+   nRF5340 Audio modules on the gateway using USB
+
+In this firmware design, no synchronization module is used after decoding the incoming frames or before encoding the outgoing ones.
+The Bluetooth LE RX FIFO is mainly used to make decoding run in a separate thread.
+
+I2S-based firmware
+------------------
+
+The following figure shows an overview of the modules currently included in the firmware that uses I2S:
+
+.. figure:: /images/octave_application_structure.svg
+   :alt: nRF5340 Audio modules on the gateway and the headsets using I2S
+
+   nRF5340 Audio modules on the gateway and the headsets using I2S
+
+In this firmware design, the synchronization module is used after decoding the incoming frames or before encoding the outgoing ones.
+The Bluetooth LE RX FIFO is mainly used to make :file:`audio_datapath.c` (synchronization module) run in a separate thread.
+After the encoding, the frames are sent using a function located in :file:`streamctrl.c`.
+
 Synchronization module overview
 -------------------------------
 
-TODO
+.. TODO: UPDATE THIS SECTION
+
+The synchronization module is at the center of the nRF5340 Audio application when using I2S.
+
+.. figure:: /images/octave_application_structure_sync_module.svg
+   :alt: nRF5340 Audio synchronization module overview
+
+   nRF5340 Audio synchronization module overview
+
+In the module design, :file:`audio_sync_timer.c` makes sure that a snapshot is taken when every package is received.
+After the decoding takes place, audio data is divided into smaller blocks.
+One audio block is provided from the I2S TX FIFO every time the I2S block complete is called.
+This callback is continuously called by I2S.
+
+The producer and consumer block indices are used to keep track of the calls.
+For example, if the consumer block catches up with the producer block, an I2S underrun occurs.
+
+The I2S block complete callback is called on both the TX and RX sides.
+
+The synchronization module uses presentation and drift compensation mechanisms to adjust audio playback for completeness and time synchronization.
+
+.. figure:: /images/octave_application_structure_sync_module.svg
+   :alt: nRF5340 Audio's state machine for compensation mechanisms
+
+   nRF5340 Audio's state machine for compensation mechanisms
 
 Synchronization module flow (headset)
 +++++++++++++++++++++++++++++++++++++
@@ -156,12 +190,12 @@ Hardware drawings
 
 The nRF5340 DK hardware drawings show both sides of the development kit:
 
-.. figure:: doc/images/nRF5340_audio_dk_front.svg
+.. figure:: /images/nRF5340_audio_dk_front.svg
    :alt: Figure 1. nRF5340 Audio DK (PCA10121) front view
 
    Figure 1. nRF5340 Audio DK (PCA10121) front view
 
-.. figure:: doc/images/nRF5340_audio_dk_back.svg
+.. figure:: /images/nRF5340_audio_dk_back.svg
    :alt: Figure 2. nRF5340 Audio DK (PCA10121) back view
 
    Figure 2. nRF5340 Audio DK (PCA10121) back view
@@ -401,7 +435,7 @@ The necessary .conf files are automatically included based on the values set for
 For more information on build types, see :ref:`octave_requirements_build_types`.
 For more information about how to configure applications in |NCS|, see :ref:`configure_application`.
 
-TODO restructure_build_example
+.. TODO: UPDATE THIS SECTION with restructure_build_example
 
 As an example, you can follow these steps to build and program the application from the command line:
 
