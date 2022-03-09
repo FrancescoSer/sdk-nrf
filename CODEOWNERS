@@ -220,4 +220,5 @@ Kconfig*                                  @tejlmand
 /tests/subsys/spm/                        @oyvindronningstad @SebastianBoe
 /tests/subsys/zigbee/                     @tomchy @sebastiandraus
 /tests/unity/                             @nordic-krch
+/tests/nrf5340_audio/                     @koffes @alexsven @erikrobstad @rick1082 @nordic-auko
 /zephyr/                                  @carlescufi
