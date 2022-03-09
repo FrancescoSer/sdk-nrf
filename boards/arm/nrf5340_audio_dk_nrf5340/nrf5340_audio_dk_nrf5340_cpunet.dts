@@ -37,7 +37,7 @@
 
 &uart0 {
 	status = "okay";
-	current-speed = <1000000>;
+	current-speed = <115200>;
 	tx-pin = <41>;
 	rx-pin = <40>;
 	rx-pull-up;

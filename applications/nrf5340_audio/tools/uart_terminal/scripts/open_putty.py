@@ -12,4 +12,4 @@ def open_putty():
     ports = get_serial_ports()
 
     for port in ports:
-        subprocess.Popen("putty -serial " + port + " -sercfg 1000000,8,n,1,N")
+        subprocess.Popen("putty -serial " + port + " -sercfg 115200,8,n,1,N")
