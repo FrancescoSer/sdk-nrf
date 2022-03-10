@@ -128,7 +128,7 @@ The I2S block complete callback is called on both the TX and RX sides.
 
 The synchronization module uses presentation and drift compensation mechanisms to adjust audio playback for completeness and time synchronization.
 
-.. figure:: /images/octave_application_structure_sync_module.svg
+.. figure:: /images/octave_application_sync_module_states.svg
    :alt: nRF5340 Audio's state machine for compensation mechanisms
 
    nRF5340 Audio's state machine for compensation mechanisms
