@@ -175,7 +175,7 @@ static struct {
 
 	struct {
 		enum drift_comp_state state : 8;
-		uint16_t ctr; /* Counting function calls - Used for waiting */
+		uint16_t ctr; /* Count func calls. Used for waiting */
 		uint32_t meas_start_time_us;
 		uint32_t center_freq;
 		bool hfclkaudio_comp_enabled;
@@ -183,7 +183,7 @@ static struct {
 
 	struct {
 		enum pres_comp_state state : 8;
-		uint16_t ctr; /* Counting function calls - Used for collecting data points and waiting */
+		uint16_t ctr; /* Count func calls. Used for collecting data points and waiting */
 		int32_t sum_err_dly_us;
 	} pres_comp;
 } ctrl_blk;
@@ -378,7 +378,6 @@ static void audio_datapath_presentation_compensation(uint32_t cur_time, uint32_t
 
 		if ((pres_adj_us >= (BLK_PERIOD_US / 2)) || (pres_adj_us <= -(BLK_PERIOD_US / 2))) {
 			pres_comp_state_set(PRES_STATE_WAIT);
-			break;
 		} else {
 			/* Drift compensation will always be in DRFT_STATE_LOCKED here */
 			pres_comp_state_set(PRES_STATE_LOCKED);
@@ -735,7 +734,7 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 		return;
 	}
 
-	/*** Check incomming data ***/
+	/*** Check incoming data ***/
 
 	uint32_t missing_blks = 0;
 

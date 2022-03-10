@@ -40,7 +40,7 @@ static enum iso_direction iso_dir;
 #define NET_BUF_POOL_ITERATE(i, _)                                                                 \
 	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,                     \
 				  BT_ISO_SDU_BUF_SIZE(CONFIG_BT_ISO_TX_MTU), 8, NULL);
-#define NET_BUF_POOL_PTR_ITERATE(i, _) &iso_tx_pool_##i,
+#define NET_BUF_POOL_PTR_ITERATE(i, _) IDENTITY(&iso_tx_pool_##i COMMA)
 
 UTIL_LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_ITERATE)
 
