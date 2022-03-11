@@ -21,6 +21,8 @@ The application can work either in the *connected isochronous stream* (CIS) mode
 Application modes
 =================
 
+.. TODO: EXPAND THIS SECTION
+
 The software design of the nRF5340 Audio development kit supports the isochronous channels (ISO) feature in the following configurations:
 
 * Broadcast Isochronous Streams (BIS):
@@ -107,17 +109,19 @@ After the encoding, the frames are sent using a function located in :file:`strea
 Synchronization module overview
 -------------------------------
 
-.. TODO: UPDATE THIS SECTION
+In CIS mode, both headsets have to keep the audio playback synchronized to provide True Wireless Stereo (TWS) audio.
+Each headset tipically uses quartz crystal oscillators to generate a stable clock frequency.
+However, the frequency of these crystal always slightly differs.
 
-The synchronization module is at the center of the nRF5340 Audio application when using I2S.
+The synchronization module keeps the left and right channel synchronized, allowing for True Wireless Stereo (TWS) audio playback when running headsets using the inter-IC sound (I2S) interface.
 
 .. figure:: /images/octave_application_structure_sync_module.svg
    :alt: nRF5340 Audio synchronization module overview
 
    nRF5340 Audio synchronization module overview
 
-In the module design, :file:`audio_sync_timer.c` makes sure that a snapshot is taken when every package is received.
-After the decoding takes place, audio data is divided into smaller blocks.
+:file:`audio_sync_timer.c` takes a snapshot when every audio packet is received.
+After the decoding takes place, the audio data is divided into smaller blocks.
 One audio block is provided from the I2S TX FIFO every time the I2S block complete is called.
 This callback is continuously called by I2S.
 
@@ -126,7 +130,20 @@ For example, if the consumer block catches up with the producer block, an I2S un
 
 The I2S block complete callback is called on both the TX and RX sides.
 
-The synchronization module uses presentation and drift compensation mechanisms to adjust audio playback for completeness and time synchronization.
+:file:`audio_datapath.c` executes two adjustments that keep the audio playback complete and synchronized:
+
+* Presentation compensation
+* Drift compensation
+
+The presentation compensation is responsible for the main synchronization adjustments.
+It moves the audio data blocks in the FIFO back a few blocks and it adds blocks of *silence* when needed.
+
+The drift compensation adjusts the frequency of the audio clock to adjust the speed at which the audio is played.
+This compensation method provides small adjustments to the audio synchronization.
+
+Both methods use the ``sdu_ref`` control variable as the reference for when the audio has to be played.
+The ``sdu_ref`` control variable is a timestamp generated on the controller running on the net core for every audio packet sent.
+Both headsets (left and right) receive this timestamps when receiving audio packets.
 
 .. figure:: /images/octave_application_sync_module_states.svg
    :alt: nRF5340 Audio's state machine for compensation mechanisms
@@ -139,7 +156,7 @@ Synchronization module flow (headset)
 The audio data in the headset devices follows the following path:
 
 1. The LE Audio Controller Subsystem for nRF53 running on the network core receives the compressed audio data.
-#. It communicates the audio data to the Zephyr Bluetooth LE host in a similar way to the :ref:`zephyr:bluetooth-hci-rpmsg-sample` sample.
+#. It sends the audio data to the Zephyr Bluetooth LE host in a similar way to the :ref:`zephyr:bluetooth-hci-rpmsg-sample` sample.
 #. The host sends the data to the stream control module (:file:`streamctrl.c`).
 #. The data is sent to a FIFO buffer.
 #. The data is sent from the FIFO buffer to the :file:`audio_datapath.c` module.
@@ -153,6 +170,8 @@ The audio data in the headset devices follows the following path:
 #. The audio decoder decodes the data and sends the uncompressed audio data (PCM) back to the :file:`audio_datapath.c` module.
 #. The :file:`audio_datapath.c` module pipes the uncompressed audio data to the hardware codec.
 #. The hardware codec receives the uncompressed audio data over the inter-IC sound (I2S) interface and performs the digital-to-analog (DAC) conversion to an analog audio signal.
+
+
 
 .. _octave_requirements:
 
